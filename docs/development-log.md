@@ -21,6 +21,23 @@
 - 문서의 UI guideline에 맞춰 앱 테마, 색상, 간격, 텍스트 스타일 토큰을 추가했다.
 - 기존 목적지 화면(`MainActivity`, `CustomActivity`, `FavoritesActivity`)은 아직 Flutter로 구현하지 않고, InitialScreen 라우팅 검증을 위한 최소 placeholder 화면만 연결했다.
 - InitialScreen 표시와 버튼별 라우팅을 확인하는 위젯 테스트를 작성했다.
+- Flutter 프로젝트의 InitialScreen 마이그레이션 결과를 검증했다.
+- `docs/architecture.md`, `docs/feature-spec.md`, `docs/coding-rules.md`, `docs/ui-guideline.md`, `docs/harness-checklist.md`를 기준으로 확인했다.
+- Initial 화면 체크리스트 기준으로 UI 표시, 라우팅, Feature First 구조, UI 규칙, 정적 분석 결과를 점검했다.
+- `flutter analyze`와 `flutter test`를 실행해 자동 검증을 수행했다.
+- 기존 Android `CustomActivity`를 Flutter `CustomScreen`으로 마이그레이션했다.
+- 기존 Android `MainActivity`의 화면 구조를 Flutter `MainScreen`으로 마이그레이션했다.
+- 현재 단계에서 금지된 Firebase, Camera, TFLite, Favorites 저장, DetailScreen 실제 구현은 제외했다.
+- Provider 기반 상태관리를 적용했다.
+  - `CustomController`: 선택된 가구 타입 상태 관리
+  - `HomeController`: 선택된 스타일, 선택된 가구 타입, 더미 추천 목록 상태 관리
+- `CustomScreen`에서 가구 타입 2열 그리드, 선택 상태 UI, `다음` 버튼, 미선택 예외 메시지, 선택값 전달 구조를 구현했다.
+- `MainScreen`에서 스타일 필터, 가구 타입 필터, 더미 추천 목록 UI, 상세 화면 이동 placeholder, 하단 이동 버튼 구조를 구현했다.
+- Android 원본 데이터 계약을 유지했다.
+  - 스타일 값: `all`, `natural`, `modern`, `classic`, `zen`, `industrial`
+  - 가구 타입 값: `all`, `chair`, `bed`, `sofa`, `dresser`, `table`
+  - 추천 아이템 필드: `image`, `name`, `price`, `link`
+- `CameraPage`, `DetailPage`, `FavoritesPage`는 실제 기능 없이 TODO placeholder로만 연결했다.
 
 ## 변경 파일
 
@@ -32,30 +49,59 @@
 - `lib/app/app.dart`
   - `MaterialApp`, 앱 제목, 테마, 초기 라우트, 라우트 맵 연결
 - `lib/app/router/app_routes.dart`
-  - Initial, Home, Custom, Favorites 라우트 상수 정의
+  - Initial, Home, Custom, Camera, Detail, Favorites 라우트 상수 정의
 - `lib/app/router/app_router.dart`
-  - `InitialScreen` 라우트 연결
-  - 후속 마이그레이션 전까지 사용할 목적지 placeholder 화면 연결
+  - `InitialScreen`, `CustomScreen`, `HomeScreen` 라우트 연결
+  - Camera, Detail, Favorites TODO placeholder 화면 연결
 - `lib/app/theme/app_colors.dart`
   - `ui-guideline.md` 기준 색상 토큰 정의
 - `lib/app/theme/app_spacing.dart`
   - 간격 및 radius 토큰 정의
 - `lib/app/theme/app_text_styles.dart`
-  - 초기 화면 타이틀과 기본 라벨 텍스트 스타일 정의
+  - 초기 화면 타이틀, 화면 제목, 본문, 라벨 텍스트 스타일 정의
 - `lib/app/theme/app_theme.dart`
   - 앱 기본 테마, AppBar, ElevatedButton, TextButton 스타일 정의
+- `lib/core/constants/catalog_options.dart`
+  - 스타일, 가구 타입, 화면 표시명, 아이콘, 제목 매핑 상수 정의
+- `lib/data/models/item_model.dart`
+  - Android `ItemData`에 대응하는 추천 아이템 모델 정의
+- `lib/shared/widgets/selectable_option_chip.dart`
+  - 스타일/가구 타입 필터 공통 선택 칩 정의
+- `lib/shared/widgets/bottom_nav_icon_button.dart`
+  - 하단 이동 아이콘 버튼 공통 위젯 정의
+- `lib/features/custom/presentation/controllers/custom_controller.dart`
+  - CustomScreen 가구 타입 선택 상태 관리
+- `lib/features/custom/presentation/custom_screen.dart`
+  - 맞춤 가구 선택 화면 구현
+- `lib/features/custom/presentation/widgets/furniture_type_tile.dart`
+  - 가구 타입 선택 타일 UI 구현
+- `lib/features/home/data/dummy_recommendation_repository.dart`
+  - Firebase 연동 전 더미 추천 목록 제공
+- `lib/features/home/presentation/controllers/home_controller.dart`
+  - MainScreen 스타일/타입 필터 및 목록 상태 관리
+- `lib/features/home/presentation/home_screen.dart`
+  - 추천 목록 화면 구조 구현
+- `lib/features/home/presentation/widgets/style_filter_bar.dart`
+  - 스타일 필터 UI 구현
+- `lib/features/home/presentation/widgets/furniture_type_filter.dart`
+  - 가구 타입 필터 UI 구현
+- `lib/features/home/presentation/widgets/recommendation_item_card.dart`
+  - 추천 아이템 카드 UI 구현
 - `lib/features/initial/domain/initial_navigation_handler.dart`
   - 초기 화면 버튼별 이동 로직 분리
 - `lib/features/initial/presentation/initial_screen.dart`
   - Android `activity_initial.xml`과 `InitialActivity` 기준 초기 화면 UI 구현
+  - 직접 입력된 일부 spacing 값을 디자인 토큰으로 교체
 - `test/widget_test.dart`
   - counter 테스트 제거
   - InitialScreen 표시 및 라우팅 테스트 추가
+  - CustomScreen 선택/미선택 예외/선택값 전달 테스트 추가
+  - MainScreen 필터, 목록, 상세 placeholder, 하단 이동 테스트 추가
 
-### 현재 Git 변경사항에 포함되어 있으나 이번 구현에서 직접 수정하지 않은 파일
+### 작업 당시 Git 변경사항에 포함되어 있었으나 이번 구현에서 직접 수정하지 않은 파일
 
 - `docs/harness-checklist.md`
-  - 현재 Git 상태에서는 수정 파일로 표시된다.
+  - 작업 당시 Git 상태에서는 수정 파일로 표시됐다.
   - 이번 InitialScreen 마이그레이션 작업 중 직접 편집하지 않았다.
 
 ## AI 활용 방식
@@ -71,6 +117,12 @@
 - AI가 Flutter 프로젝트의 현재 상태를 확인한 뒤, counter 템플릿을 실제 앱 구조로 교체했다.
 - AI가 Feature First 구조를 유지하도록 `app`, `theme`, `router`, `features/initial` 단위로 파일을 분리했다.
 - AI가 구현 후 `dart format`, `flutter analyze`, `flutter test`를 실행해 정적 분석과 위젯 테스트를 검증했다.
+- AI가 문서 기준과 현재 Flutter 코드를 대조했다.
+- AI가 InitialScreen의 UI 요소, 라우트 연결, 테스트 코드를 확인했다.
+- AI가 문제점을 바로 수정하지 않고 목록과 수정 제안으로 정리했다.
+- AI가 Android `CustomActivity`, `CustomAdapter`, `activity_custom.xml`, `MainActivity`, `activity_main.xml`, `ItemAdapter`, `ItemData`를 분석해 Flutter 구현 범위를 도출했다.
+- AI가 Provider 상태관리, Feature First 구조, 공통 위젯 분리를 적용해 Custom/Main 화면을 구현했다.
+- AI가 현재 단계에서 금지된 기능은 실제 구현하지 않고 TODO placeholder와 더미 데이터로 대체했다.
 
 ## 발생한 문제
 
@@ -78,6 +130,11 @@
 - `InitialScreen`의 이동 대상인 Home, Custom, Favorites 화면은 아직 Flutter로 마이그레이션되지 않은 상태였다.
 - `dart format`, `flutter analyze`, `flutter test` 실행 시 Flutter SDK가 `/opt/homebrew/share/flutter/bin/cache/engine.stamp`를 갱신하려고 하면서 샌드박스 권한 오류가 발생했다.
 - `docs/harness-checklist.md`가 작업 전부터 Git 변경사항에 포함되어 있어, 이번 작업 변경 범위와 구분할 필요가 있었다.
+- `/home`, `/custom`, `/favorites` 이동 대상이 실제 Page가 아닌 placeholder라 체크리스트 일부 항목은 완전 검증할 수 없었다.
+- placeholder 화면이 임시 화면 또는 TODO임을 UI상 명확히 표시하지 않는다.
+- 일부 간격 값이 `AppSpacing` 토큰 대신 직접 입력되어 있다.
+- Provider의 `context.select`를 `GridView.builder` itemBuilder 내부에서 직접 사용해 테스트 중 Provider assertion이 발생했다.
+- CustomScreen 미선택 예외 테스트에서 SnackBar가 하단 `다음` 버튼을 일시적으로 덮어 테스트 탭이 실패했다.
 
 ## 해결 방법
 
@@ -88,8 +145,14 @@
   - `AppTheme`
 - 아직 구현되지 않은 목적지 화면은 새 기능을 추가하지 않고, 라우팅 계약 검증용 placeholder 화면으로만 연결했다.
 - `InitialNavigationHandler`를 두어 UI 위젯과 화면 이동 로직을 분리했다.
-- Flutter SDK cache 갱신 권한 문제는 승인된 escalated command로 동일 명령을 다시 실행해 해결했다.
-- `docs/harness-checklist.md`는 수정하지 않고, 현재 Git 변경사항에만 포함되어 있음을 작업 기록에 분리해서 남겼다.
+- Flutter SDK cache 권한 문제는 승인된 escalated command로 동일 명령을 다시 실행해 해결하고 검증했다.
+- `docs/harness-checklist.md`는 수정하지 않고, 작업 당시 Git 변경사항에 포함되어 있었음을 작업 기록에 분리해서 남겼다.
+- 미완료 항목은 수정하지 않고 문제 목록과 수정 제안으로 분리했다.
+- `CustomScreen`과 `MainScreen`을 실제 Flutter Page로 연결해 기존 placeholder를 교체했다.
+- `CameraPage`, `DetailPage`, `FavoritesPage`는 금지된 기능을 구현하지 않고 TODO placeholder로 명확히 표시했다.
+- `context.select`는 GridView itemBuilder 밖에서 사용해 Provider assertion을 해결했다.
+- SnackBar가 사라진 뒤 다음 버튼을 누르도록 위젯 테스트 타이밍을 보정했다.
+- InitialScreen의 직접 입력 spacing 일부를 `AppSpacing` 토큰으로 교체했다.
 - 검증 결과:
   - `dart format lib test` 통과
   - `flutter analyze` 통과
@@ -97,12 +160,16 @@
 
 ## 다음 작업 계획
 
-- `CustomActivity`를 Flutter `CustomScreen`으로 마이그레이션한다.
-  - 가구 타입 2열 그리드
-  - 선택 상태 표시
-  - 미선택 시 `"가구를 선택해주세요!"` 메시지 표시
-  - 선택한 `type`을 Camera 화면으로 전달
-- `MainActivity`, `FavoritesActivity` placeholder를 실제 화면으로 순차 교체한다.
-- 라우트 placeholder는 각 화면 마이그레이션 완료 시 제거한다.
-- Firebase, 로컬 JSON 저장소, 카메라/TFLite 등 결정이 필요한 항목은 구현 전 문서 기준과 현재 의존성을 다시 확인한다.
+- `CameraActivity` / `ClassifierActivity` 마이그레이션 범위를 결정한다.
+  - 카메라 권한
+  - 카메라 프리뷰
+  - TFLite 모델 asset 등록
+  - 선택된 `type` 전달 유지
+- `DetailActivity`를 Flutter `DetailScreen`으로 마이그레이션한다.
+  - `image`, `name`, `price`, `link` 전달 계약 유지
+  - 구매 링크 외부 앱 열기
+  - 즐겨찾기 저장은 별도 단계에서 진행
+- `FavoritesActivity`를 Flutter `FavoritesScreen`으로 마이그레이션한다.
+  - 로컬 JSON 저장소 방식 결정 후 구현
+- Firebase 연동 전 `DummyRecommendationRepository`를 실제 repository interface로 분리할지 검토한다.
 - 기능 단위 구현마다 `flutter analyze`, 관련 위젯 테스트 또는 수동 검증 결과를 남긴다.

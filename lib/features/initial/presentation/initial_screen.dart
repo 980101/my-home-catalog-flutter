@@ -18,7 +18,7 @@ class InitialScreen extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: IconButton(
                   onPressed: navigationHandler.openFavorites,
                   icon: const Icon(Icons.favorite),
@@ -38,7 +38,7 @@ class InitialScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: AppTextStyles.display,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: AppSpacing.xl),
                     ElevatedButton(
                       onPressed: navigationHandler.openCustom,
                       child: const Text('맞춤 가구 둘러보기'),
