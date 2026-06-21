@@ -14,7 +14,7 @@ void main() {
     expect(find.byIcon(Icons.favorite), findsOneWidget);
   });
 
-  testWidgets('InitialScreen start button opens MainActivity route', (
+  testWidgets('InitialScreen start button opens MainPage route', (
     tester,
   ) async {
     await tester.pumpWidget(const MyHomeCatalogApp());
@@ -22,10 +22,11 @@ void main() {
     await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
 
-    expect(find.text('MainActivity'), findsOneWidget);
+    expect(find.text('모든 스타일'), findsOneWidget);
+    expect(find.text('Natural Chair'), findsOneWidget);
   });
 
-  testWidgets('InitialScreen custom button opens CustomActivity route', (
+  testWidgets('CustomScreen validates selection and passes selected type', (
     tester,
   ) async {
     await tester.pumpWidget(const MyHomeCatalogApp());
@@ -33,17 +34,79 @@ void main() {
     await tester.tap(find.text('맞춤 가구 둘러보기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('CustomActivity'), findsOneWidget);
+    await tester.tap(find.text('다음'));
+    await tester.pump();
+
+    expect(find.text('가구를 선택해주세요!'), findsOneWidget);
+
+    await tester.tap(find.text('chair'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CameraPage'), findsOneWidget);
+    expect(
+      find.text('TODO: CameraActivity migration pending. type=chair'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('InitialScreen favorites button opens FavoritesActivity route', (
+  testWidgets('MainScreen updates style and type filters', (tester) async {
+    await tester.pumpWidget(const MyHomeCatalogApp());
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('모던'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('모던').first, findsOneWidget);
+    expect(find.text('Modern Bed'), findsOneWidget);
+
+    await tester.tap(find.text('Chair'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modern Bed'), findsNothing);
+  });
+
+  testWidgets('MainScreen item tap opens DetailPage placeholder', (
     tester,
   ) async {
     await tester.pumpWidget(const MyHomeCatalogApp());
 
-    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
 
-    expect(find.text('FavoritesActivity'), findsOneWidget);
+    await tester.tap(find.text('Natural Chair'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('DetailPage'), findsOneWidget);
+    expect(
+      find.textContaining('TODO: DetailActivity migration pending.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('MainScreen bottom navigation opens Custom and Favorites pages', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyHomeCatalogApp());
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('맞춤 가구 둘러보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('가구 선택'), findsOneWidget);
+
+    Navigator.of(tester.element(find.text('가구 선택'))).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('즐겨찾기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('FavoritesPage'), findsOneWidget);
   });
 }

@@ -11,7 +11,7 @@ class MyHomeCatalogApp extends StatelessWidget {
       title: 'My Home Catalog',
       theme: AppTheme.light,
       initialRoute: AppRoutes.initial,
-      routes: AppRouter.routes,
+      onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }
 }
