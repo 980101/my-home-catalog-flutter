@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_home_catalog_flutter/app/router/app_routes.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
-import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/custom/presentation/custom_screen.dart';
+import 'package:my_home_catalog_flutter/features/detail/presentation/detail_screen.dart';
+import 'package:my_home_catalog_flutter/features/favorites/presentation/favorites_screen.dart';
 import 'package:my_home_catalog_flutter/features/initial/domain/initial_navigation_handler.dart';
 import 'package:my_home_catalog_flutter/features/initial/presentation/initial_screen.dart';
 import 'package:my_home_catalog_flutter/features/home/presentation/home_screen.dart';
@@ -32,14 +33,8 @@ class AppRouter {
         title: 'CameraPage',
         description: _cameraDescription(settings.arguments),
       ),
-      AppRoutes.detail => _RouteStubScreen(
-        title: 'DetailPage',
-        description: _detailDescription(settings.arguments),
-      ),
-      AppRoutes.favorites => const _RouteStubScreen(
-        title: 'FavoritesPage',
-        description: 'TODO: FavoritesActivity migration pending.',
-      ),
+      AppRoutes.detail => DetailScreen.fromRoute(settings),
+      AppRoutes.favorites => const FavoritesScreen(),
       _ => const _RouteStubScreen(
         title: 'Unknown route',
         description: 'TODO: Route is not defined.',
@@ -50,17 +45,6 @@ class AppRouter {
   static String _cameraDescription(Object? arguments) {
     final type = arguments is Map ? arguments['type'] : null;
     return 'TODO: CameraActivity migration pending. type=${type ?? 'none'}';
-  }
-
-  static String _detailDescription(Object? arguments) {
-    final item = arguments is ItemModel ? arguments : null;
-    if (item == null) {
-      return 'TODO: DetailActivity migration pending.';
-    }
-
-    return 'TODO: DetailActivity migration pending. '
-        'image=${item.image}, name=${item.name}, price=${item.price}, '
-        'link=${item.link}';
   }
 }
 

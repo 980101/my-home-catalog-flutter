@@ -173,3 +173,112 @@
   - 로컬 JSON 저장소 방식 결정 후 구현
 - Firebase 연동 전 `DummyRecommendationRepository`를 실제 repository interface로 분리할지 검토한다.
 - 기능 단위 구현마다 `flutter analyze`, 관련 위젯 테스트 또는 수동 검증 결과를 남긴다.
+
+---
+
+2026-06-22
+
+## 작업 내용
+
+- 기존 Android `DetailActivity`를 Flutter `DetailScreen`으로 마이그레이션했다.
+- 기존 Android `FavoritesActivity`와 `FavoritesAdapter`를 Flutter `FavoritesScreen`으로 마이그레이션했다.
+- `docs/architecture.md`, `docs/feature-spec.md`, `docs/coding-rules.md`, `docs/ui-guideline.md`, `docs/harness-checklist.md` 기준으로 구현 범위를 확인했다.
+- Android 원본 데이터 계약을 유지했다.
+  - 추천/즐겨찾기 상세 전달 필드: `image`, `name`, `price`, `link`
+  - 로컬 즐겨찾기 JSON 원본 계약: `Image`, `Name`, `Price`, `Link`
+- 현재 단계에서 금지된 Firebase 연동, Camera 기능, TFLite 추론, 실제 즐겨찾기 저장, 실제 JSON 파일 저장, 추천 데이터 조회 API는 구현하지 않았다.
+- `DetailScreen`에서 전달받은 상품 이미지 placeholder, 상품명, 가격, 구매하기 버튼, 즐겨찾기 버튼을 표시했다.
+- `url_launcher` 기반 외부 링크 실행 구조를 추가했다.
+- `FavoritesScreen`에서 로컬 더미 데이터 기반 즐겨찾기 목록, 선택 버튼, 삭제 버튼, 상세 화면 이동, 빈 상태 UI를 구현했다.
+- Provider 기반 상태관리를 적용했다.
+  - `DetailController`: 즐겨찾기 버튼 상태, 구매 링크 실행 상태, 메시지 상태 관리
+  - `FavoritesController`: 더미 즐겨찾기 목록, 삭제 대상 선택, 삭제, 빈 상태 관리
+- `ItemImagePlaceholder`를 공통 위젯으로 분리해 추천 목록, 상세 화면, 즐겨찾기 목록에서 재사용했다.
+
+## 변경 파일
+
+- `pubspec.yaml`
+  - `url_launcher` 의존성 추가
+- `pubspec.lock`
+  - `url_launcher` 및 플랫폼 패키지 잠금 정보 갱신
+- `ios/Flutter/Debug.xcconfig`
+- `ios/Flutter/Release.xcconfig`
+- `ios/Podfile`
+- `macos/Flutter/Flutter-Debug.xcconfig`
+- `macos/Flutter/Flutter-Release.xcconfig`
+- `macos/Flutter/GeneratedPluginRegistrant.swift`
+- `macos/Podfile`
+- `linux/flutter/generated_plugin_registrant.cc`
+- `linux/flutter/generated_plugins.cmake`
+- `windows/flutter/generated_plugin_registrant.cc`
+- `windows/flutter/generated_plugins.cmake`
+  - `url_launcher` 플러그인 등록을 위해 Flutter tool이 생성 또는 갱신
+- `lib/app/router/app_router.dart`
+  - `DetailScreen`, `FavoritesScreen` 실제 라우트 연결
+- `lib/features/home/presentation/widgets/recommendation_item_card.dart`
+  - 공통 이미지 placeholder 사용으로 변경
+- `lib/shared/widgets/item_image_placeholder.dart`
+  - 상품 이미지 placeholder 공통 위젯 추가
+- `lib/features/detail/data/external_link_launcher.dart`
+  - 외부 링크 실행 service 추가
+- `lib/features/detail/presentation/controllers/detail_controller.dart`
+  - 상세 화면 상태관리 추가
+- `lib/features/detail/presentation/detail_screen.dart`
+  - 상품 상세 화면 구현
+- `lib/features/detail/presentation/widgets/detail_info_row.dart`
+  - 상세 정보 표시 위젯 추가
+- `lib/features/favorites/data/dummy_favorites_repository.dart`
+  - 즐겨찾기 더미 데이터 repository 추가
+- `lib/features/favorites/presentation/controllers/favorites_controller.dart`
+  - 즐겨찾기 목록, 선택, 삭제 상태관리 추가
+- `lib/features/favorites/presentation/favorites_screen.dart`
+  - 즐겨찾기 화면 구현
+- `lib/features/favorites/presentation/widgets/favorite_item_card.dart`
+  - 즐겨찾기 아이템 카드 구현
+- `test/widget_test.dart`
+  - DetailScreen 표시 검증 추가
+  - FavoritesScreen 목록, 선택, 삭제, 상세 이동, 빈 상태 테스트 추가
+
+## AI 활용 방식
+
+- AI가 Android 원본 `DetailActivity`, `FavoritesActivity`, `FavoritesAdapter`와 Flutter docs를 함께 분석했다.
+- AI가 `feature-spec.md`에 존재하는 기능만 Flutter 화면 구조로 옮겼다.
+- AI가 금지된 실제 저장/JSON 파일 저장은 구현하지 않고 Provider 상태와 더미 repository로 대체했다.
+- AI가 외부 링크 실행은 `url_launcher` service로 분리해 UI와 실행 로직을 분리했다.
+- AI가 위젯 테스트를 통해 Detail/Favorites 라우팅과 화면 상태를 검증했다.
+
+## 발생한 문제
+
+- `url_launcher` 의존성 추가 후 Flutter tool이 iOS/macOS/Linux/Windows plugin registrant와 Podfile을 생성 또는 수정했다.
+- 일반 샌드박스에서 Flutter SDK cache 갱신 권한 문제로 `flutter pub get`, `dart format`, `flutter analyze` 실행이 실패했다.
+- 즐겨찾기 더미 repository가 `const` 리스트를 반환해 삭제 시 `Unsupported operation: Cannot remove from an unmodifiable list` 오류가 발생했다.
+
+## 해결 방법
+
+- Flutter SDK cache 권한 문제는 승인된 escalated command로 동일 명령을 다시 실행해 해결했다.
+- `FavoritesController`에서 repository 반환 값을 수정 가능한 리스트로 복사해 삭제 오류를 해결했다.
+- `CameraPage`는 이번 범위 밖이므로 기존 TODO placeholder를 유지했다.
+- 실제 JSON 저장 기능은 이후 단계로 남기고, 현재 단계에서는 로컬 더미 데이터와 화면 상태만 구현했다.
+
+## 검증 결과
+
+- `flutter pub get` 통과
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+  - InitialScreen 표시 및 이동
+  - CustomScreen 선택/미선택 예외/선택값 전달
+  - MainScreen 필터/목록/상세 이동
+  - DetailScreen 상품 정보 표시
+  - FavoritesScreen 목록/선택/삭제/상세 이동/빈 상태
+
+## 다음 작업 계획
+
+- 실제 즐겨찾기 저장소를 구현한다.
+  - `savedItem.json` 읽기
+  - `Image`, `Name`, `Price`, `Link` mapper 분리
+  - 저장, 중복 체크, 삭제 반영
+- `DetailScreen` 즐겨찾기 버튼을 실제 저장소와 연결한다.
+- `FavoritesScreen`을 더미 repository에서 실제 로컬 JSON repository로 교체한다.
+- `CameraActivity` / `ClassifierActivity` 마이그레이션 범위를 결정한다.
+- Firebase 추천 데이터 조회 repository 적용은 Camera/Detail/Favorites 이후 별도 단계에서 진행한다.

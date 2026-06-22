@@ -71,7 +71,7 @@ void main() {
     expect(find.text('Modern Bed'), findsNothing);
   });
 
-  testWidgets('MainScreen item tap opens DetailPage placeholder', (
+  testWidgets('MainScreen item tap opens DetailScreen with item contract', (
     tester,
   ) async {
     await tester.pumpWidget(const MyHomeCatalogApp());
@@ -82,11 +82,13 @@ void main() {
     await tester.tap(find.text('Natural Chair'));
     await tester.pumpAndSettle();
 
-    expect(find.text('DetailPage'), findsOneWidget);
-    expect(
-      find.textContaining('TODO: DetailActivity migration pending.'),
-      findsOneWidget,
-    );
+    expect(find.text('상세 정보'), findsOneWidget);
+    expect(find.text('제품명'), findsOneWidget);
+    expect(find.text('Natural Chair'), findsOneWidget);
+    expect(find.text('가격'), findsOneWidget);
+    expect(find.text('120,000원'), findsOneWidget);
+    expect(find.text('구매하기'), findsOneWidget);
+    expect(find.byTooltip('즐겨찾기 저장'), findsOneWidget);
   });
 
   testWidgets('MainScreen bottom navigation opens Custom and Favorites pages', (
@@ -107,6 +109,55 @@ void main() {
     await tester.tap(find.byTooltip('즐겨찾기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('FavoritesPage'), findsOneWidget);
+    expect(find.text('즐겨찾기'), findsOneWidget);
+    expect(find.text('Favorite Chair'), findsOneWidget);
+  });
+
+  testWidgets('FavoritesScreen selects, deletes, and opens detail', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyHomeCatalogApp());
+
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favorite Chair'), findsOneWidget);
+    expect(find.text('Favorite Table'), findsOneWidget);
+    expect(find.text('선택'), findsNWidgets(2));
+
+    await tester.tap(find.text('선택').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('삭제'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Favorite Chair'), findsNothing);
+    expect(find.text('Favorite Table'), findsOneWidget);
+
+    await tester.tap(find.text('Favorite Table'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('상세 정보'), findsOneWidget);
+    expect(find.text('Favorite Table'), findsOneWidget);
+    expect(find.text('210,000원'), findsOneWidget);
+  });
+
+  testWidgets('FavoritesScreen shows empty state after deleting all items', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyHomeCatalogApp());
+
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('선택').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('선택').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('삭제'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('즐겨찾기한 항목이 없습니다 !'), findsOneWidget);
   });
 }
