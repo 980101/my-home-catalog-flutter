@@ -3,7 +3,7 @@ import 'package:my_home_catalog_flutter/app/theme/app_colors.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_text_styles.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
-import 'package:my_home_catalog_flutter/shared/widgets/item_image_placeholder.dart';
+import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 
 class RecommendationItemCard extends StatelessWidget {
   const RecommendationItemCard({
@@ -29,7 +29,11 @@ class RecommendationItemCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            ItemImagePlaceholder(label: item.type, size: 88),
+            ItemNetworkImage(
+              imageUrl: item.image,
+              placeholderLabel: item.type,
+              size: 88,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(

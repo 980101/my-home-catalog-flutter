@@ -6,6 +6,7 @@ import 'package:my_home_catalog_flutter/app/app.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_query.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
+import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 
 void main() {
   test('RecommendationQueryResolver expands all style and type values', () {
@@ -34,6 +35,43 @@ void main() {
     expect(queries, hasLength(1));
     expect(queries.single.style, 'modern');
     expect(queries.single.type, 'chair');
+  });
+
+  test('ItemModel maps Firebase item fields', () {
+    final item = ItemModel.fromFirebaseMap(
+      data: const {
+        'image': 'https://example.com/item.png',
+        'name': 'Firebase Chair',
+        'price': '99,000원',
+        'link': 'https://example.com/item',
+      },
+      style: 'natural',
+      type: 'chair',
+    );
+
+    expect(item.image, 'https://example.com/item.png');
+    expect(item.name, 'Firebase Chair');
+    expect(item.price, '99,000원');
+    expect(item.link, 'https://example.com/item');
+    expect(item.style, 'natural');
+    expect(item.type, 'chair');
+  });
+
+  testWidgets('ItemNetworkImage shows placeholder for invalid image url', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ItemNetworkImage(
+          imageUrl: 'not-a-network-url',
+          placeholderLabel: 'chair',
+          size: 88,
+        ),
+      ),
+    );
+
+    expect(find.text('chair'), findsOneWidget);
+    expect(find.byIcon(Icons.image_not_supported_outlined), findsOneWidget);
   });
 
   testWidgets('InitialScreen shows Android initial entry actions', (

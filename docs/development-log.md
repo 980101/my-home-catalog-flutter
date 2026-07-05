@@ -377,3 +377,75 @@
 - 실제 Firebase 데이터가 비어 있는 경우 빈 상태 UI를 기준으로 수동 검증한다.
 - 즐겨찾기 로컬 JSON 저장소 구현을 진행한다.
 - Camera/TFLite 마이그레이션 전 `CameraPage`에서 `MainPage`로 `style`, `type` 전달 계약을 확정한다.
+
+## 2026-07-05 작업 내용 - Firebase Android 설정 및 실데이터 이미지 로딩 보완
+
+### 작업 내용
+
+- Android 에뮬레이터에서 발생한 Firebase 초기화 실패 오류를 점검했다.
+- `google-services.json`이 Android 리소스로 변환되지 않아 발생한 `Failed to load FirebaseOptions from resource` 문제를 수정했다.
+- Android Gradle 설정에 Google Services 플러그인을 등록하고 앱 모듈에 적용했다.
+- MainScreen의 Firebase Realtime Database 실데이터 조회 흐름을 점검했다.
+- Firebase snapshot 파싱을 보완해 leaf 데이터가 `Map` 또는 `List` 형태여도 `ItemModel`로 변환되도록 했다.
+- 추천 카드에서 Firebase `image` 필드를 사용해 네트워크 이미지를 로드하도록 변경했다.
+- 이미지 URL이 없거나 잘못됐거나 로딩에 실패하면 placeholder를 표시하도록 구현했다.
+- Firebase 모델 변환과 이미지 실패 placeholder 테스트를 추가했다.
+
+### 변경 파일
+
+- `android/settings.gradle.kts`
+- `android/app/build.gradle.kts`
+- `lib/features/home/data/firebase_recommendation_repository.dart`
+- `lib/features/home/presentation/widgets/recommendation_item_card.dart`
+- `lib/shared/widgets/item_image_placeholder.dart`
+- `lib/shared/widgets/item_network_image.dart`
+- `test/widget_test.dart`
+
+### AI 활용 방식
+
+- AI가 스크린샷의 Firebase 초기화 오류 메시지를 기준으로 Android Firebase 리소스 생성 문제를 추적했다.
+- AI가 `google-services.json` 위치, `package_name`, Android `applicationId`, Gradle 플러그인 적용 여부를 확인했다.
+- AI가 `feature-spec.md`, `coding-rules.md`, `ui-guideline.md`, `harness-checklist.md` 기준으로 작업 범위를 MainScreen/Firebase/이미지 로딩으로 제한했다.
+- AI가 Camera, TFLite, 즐겨찾기 `savedItem.json`, iOS 설정은 이번 작업에서 제외했다.
+- AI가 단위/위젯 테스트와 Android 에뮬레이터 수동 검증을 함께 수행했다.
+
+### 발생한 문제
+
+- `android/app/google-services.json`은 존재했지만 `com.google.gms.google-services` 플러그인이 적용되지 않아 `google_app_id`, `firebase_database_url` 리소스가 생성되지 않았다.
+- 일반 샌드박스에서 Gradle wrapper가 `~/.gradle` lock 파일에 접근하지 못해 Gradle 태스크가 실패했다.
+- 이전 `flutter run` 실행 중 `The log reader stopped unexpectedly` 오류가 발생한 적이 있었다.
+- Firebase 실데이터는 표시됐지만, 현재 `image` 값은 에뮬레이터에서 실제 이미지로 로드되지 않고 placeholder로 표시됐다.
+- ADB 화면 캡처와 입력은 일반 샌드박스에서 ADB daemon 접근 제한으로 실패해 승인된 명령으로 재실행했다.
+
+### 해결 방법
+
+- `android/settings.gradle.kts`에 `com.google.gms.google-services` 플러그인 버전을 등록했다.
+- `android/app/build.gradle.kts`에 `id("com.google.gms.google-services")`를 적용했다.
+- `./gradlew :app:processDebugGoogleServices`로 Firebase Android 리소스 생성을 확인했다.
+- `build/app/generated/res/processDebugGoogleServices/values/values.xml`에서 `google_app_id`, `firebase_database_url` 생성을 확인했다.
+- Firebase leaf snapshot 파싱 로직을 `Map`과 `List` 모두 처리하도록 보완했다.
+- `ItemNetworkImage` 위젯을 추가해 `Image.network` 로딩, 로딩 표시, 실패 placeholder를 처리했다.
+- 잘못된 URL 또는 비어 있는 URL은 네트워크 요청 없이 placeholder로 처리하도록 했다.
+
+### 검증 결과
+
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+- `./gradlew :app:processDebugGoogleServices` 통과
+- `./gradlew :app:assembleDebug` 통과
+- `flutter run -d emulator-5554 --no-resident` 통과
+- Android 에뮬레이터에서 InitialScreen 정상 진입 확인
+- Android 에뮬레이터에서 MainScreen 진입 후 `style=all`, `type=all` Firebase 실데이터 표시 확인
+- 스타일 필터 `모던` 선택 시 목록 재조회 및 갱신 확인
+- 가구 타입 필터 `Bed` 선택 시 목록 재조회 및 갱신 확인
+- 이미지 로딩 실패 시 placeholder 표시 및 앱 크래시 없음 확인
+
+### 다음 작업 계획
+
+- Firebase `image` 필드가 실제 접근 가능한 HTTP/HTTPS 이미지 URL인지 점검한다.
+- 실제 이미지 URL이 유효한 경우 MainScreen에서 상품 이미지가 정상 표시되는지 재검증한다.
+- 즐겨찾기 `savedItem.json` 저장/조회/삭제 repository를 구현한다.
+- `DetailScreen` 즐겨찾기 버튼을 실제 저장소와 연결한다.
+- `FavoritesScreen`을 더미 repository에서 실제 로컬 JSON repository로 교체한다.
+- Camera/TFLite 구현 전 `CameraPage`에서 `MainPage`로 전달할 `style`, `type` 계약을 유지한다.
