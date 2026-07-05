@@ -14,4 +14,19 @@ class ItemModel {
   final String link;
   final String style;
   final String type;
+
+  factory ItemModel.fromFirebaseMap({
+    required Map<Object?, Object?> data,
+    required String style,
+    required String type,
+  }) {
+    return ItemModel(
+      image: data['image']?.toString() ?? '',
+      name: data['name']?.toString() ?? '',
+      price: data['price']?.toString() ?? '',
+      link: data['link']?.toString() ?? '',
+      style: style,
+      type: type,
+    );
+  }
 }

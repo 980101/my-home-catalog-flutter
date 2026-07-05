@@ -282,3 +282,98 @@
 - `FavoritesScreen`을 더미 repository에서 실제 로컬 JSON repository로 교체한다.
 - `CameraActivity` / `ClassifierActivity` 마이그레이션 범위를 결정한다.
 - Firebase 추천 데이터 조회 repository 적용은 Camera/Detail/Favorites 이후 별도 단계에서 진행한다.
+
+## 추가 작업 내용 - Firebase 추천 목록 연동
+
+- 기존 Android `MainActivity`의 Firebase Realtime Database 조회 계약을 Flutter에 반영했다.
+- Firebase 조회 경로는 기존 계약과 동일하게 `all/{style}/{type}`을 사용하도록 구현했다.
+- `style=all`일 때 `natural`, `modern`, `classic`, `industrial`, `zen` 전체를 순회하도록 분리했다.
+- `type=all`일 때 `bed`, `chair`, `dresser`, `sofa`, `table` 전체를 순회하도록 분리했다.
+- Firebase child snapshot을 `image`, `name`, `price`, `link` 필드 기반 `ItemModel`로 변환하도록 구현했다.
+- MainScreen의 더미 추천 목록 repository를 Firebase repository 주입 구조로 교체했다.
+- `HomeController`가 `loading`, `data`, `empty`, `error` 상태를 구분하도록 변경했다.
+- MainScreen에 로딩 상태, 빈 목록 상태, 에러 상태 UI를 추가했다.
+- `DetailScreen`은 전달받은 `ItemModel`만 표시하며 Firebase를 직접 호출하지 않도록 유지했다.
+- 테스트에서는 Firebase 실제 설정에 의존하지 않도록 fake repository를 앱에 주입했다.
+
+## 추가 변경 파일 - Firebase 추천 목록 연동
+
+- `pubspec.yaml`
+  - `firebase_core`, `firebase_database` 의존성 추가
+- `pubspec.lock`
+  - Firebase 관련 패키지 잠금 정보 갱신
+- `lib/main.dart`
+  - `Firebase.initializeApp()` 초기화 추가
+- `lib/app/app.dart`
+  - `RecommendationRepository` 주입 구조 추가
+  - 기본 repository를 `FirebaseRecommendationRepository`로 설정
+- `lib/app/router/app_router.dart`
+  - HomeScreen 라우트에 repository 전달
+- `lib/data/models/item_model.dart`
+  - Firebase map 변환 factory 추가
+- `lib/features/home/data/recommendation_repository.dart`
+  - 추천 목록 repository interface 추가
+- `lib/features/home/data/recommendation_query.dart`
+  - `all` style/type 순회 경로 resolver 추가
+- `lib/features/home/data/firebase_recommendation_repository.dart`
+  - Firebase Realtime Database 추천 목록 조회 repository 추가
+- `lib/features/home/data/dummy_recommendation_repository.dart`
+  - repository interface 구현 및 비동기 반환으로 변경
+- `lib/features/home/presentation/controllers/home_controller.dart`
+  - 비동기 조회, loading/data/empty/error 상태관리 적용
+- `lib/features/home/presentation/home_screen.dart`
+  - Provider 상태 기반 추천 목록 UI 적용
+  - 로딩, 빈 목록, 에러 UI 추가
+- `test/widget_test.dart`
+  - Firebase 경로 resolver 테스트 추가
+  - MainScreen loading/empty/error 상태 테스트 추가
+  - Firebase 실제 설정 대신 fake repository 주입
+- `macos/Flutter/GeneratedPluginRegistrant.swift`
+- `windows/flutter/generated_plugin_registrant.cc`
+- `windows/flutter/generated_plugins.cmake`
+  - Firebase plugin 등록을 위해 Flutter tool이 갱신
+
+## 추가 AI 활용 방식 - Firebase 추천 목록 연동
+
+- AI가 Android `MainActivity.modifyList()`와 `loadData()`의 조회 흐름을 Flutter repository 구조로 옮겼다.
+- AI가 `feature-spec.md`와 `harness-checklist.md`의 Firebase path, 필터, 상태 검증 기준을 코드 구조에 반영했다.
+- AI가 Screen에서 Firebase를 직접 호출하지 않도록 repository interface와 Provider 상태관리로 분리했다.
+- AI가 Firebase 설정 파일 없이도 테스트 가능한 구조를 만들기 위해 fake repository 주입 방식을 적용했다.
+
+## 추가 발생한 문제 - Firebase 추천 목록 연동
+
+- Flutter 프로젝트 안에서 Firebase Android/iOS 설정 파일을 찾을 수 없었다.
+  - `android/app/google-services.json` 없음
+  - `ios/Runner/GoogleService-Info.plist` 없음
+- 일반 샌드박스에서 Flutter SDK cache 갱신 권한 문제로 의존성/검증 명령이 실패할 수 있었다.
+- loading 상태 테스트에서 비동기 조회가 너무 빨리 끝나 `CircularProgressIndicator` 검증이 불안정했다.
+- 같은 테스트 안에서 앱을 다시 pump할 때 이전 Navigator 상태가 남아 초기 화면을 찾지 못하는 문제가 있었다.
+
+## 추가 해결 방법 - Firebase 추천 목록 연동
+
+- Firebase 설정 파일 누락은 지시대로 수정하지 않고 미검증 사항으로 남겼다.
+- Flutter SDK cache 권한 문제는 승인된 명령으로 재실행해 해결했다.
+- loading 상태 테스트는 완료되지 않는 fake repository를 사용해 안정화했다.
+- empty/error 상태 테스트 전에는 위젯 트리를 비운 뒤 새 앱을 pump해 Navigator 상태를 초기화했다.
+- Firebase 실제 호출은 repository에만 두고, MainScreen은 Provider 상태만 구독하도록 유지했다.
+
+## 추가 검증 결과 - Firebase 추천 목록 연동
+
+- `flutter pub get` 통과
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+  - Firebase 경로 resolver 검증
+  - MainScreen 기본값 `style=all`, `type=all` 검증
+  - MainScreen 필터 변경 및 상세 전달 검증
+  - MainScreen loading/empty/error 상태 검증
+
+## 추가 다음 작업 계획 - Firebase 추천 목록 연동
+
+- Flutter Firebase 설정 파일을 추가한다.
+  - Android: `android/app/google-services.json`
+  - iOS: `ios/Runner/GoogleService-Info.plist`
+- 실제 Firebase 프로젝트 연결 후 `flutter run`으로 런타임 조회를 확인한다.
+- 실제 Firebase 데이터가 비어 있는 경우 빈 상태 UI를 기준으로 수동 검증한다.
+- 즐겨찾기 로컬 JSON 저장소 구현을 진행한다.
+- Camera/TFLite 마이그레이션 전 `CameraPage`에서 `MainPage`로 `style`, `type` 전달 계약을 확정한다.

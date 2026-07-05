@@ -1,12 +1,45 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_home_catalog_flutter/app/app.dart';
+import 'package:my_home_catalog_flutter/data/models/item_model.dart';
+import 'package:my_home_catalog_flutter/features/home/data/recommendation_query.dart';
+import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 
 void main() {
+  test('RecommendationQueryResolver expands all style and type values', () {
+    const resolver = RecommendationQueryResolver();
+
+    final queries = resolver.resolve(style: 'all', type: 'all');
+
+    expect(queries, hasLength(25));
+    expect(
+      queries.map((query) => 'all/${query.style}/${query.type}'),
+      containsAll([
+        'all/natural/bed',
+        'all/modern/chair',
+        'all/classic/dresser',
+        'all/industrial/sofa',
+        'all/zen/table',
+      ]),
+    );
+  });
+
+  test('RecommendationQueryResolver keeps specific style and type path', () {
+    const resolver = RecommendationQueryResolver();
+
+    final queries = resolver.resolve(style: 'modern', type: 'chair');
+
+    expect(queries, hasLength(1));
+    expect(queries.single.style, 'modern');
+    expect(queries.single.type, 'chair');
+  });
+
   testWidgets('InitialScreen shows Android initial entry actions', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     expect(find.text('My Home\n Catalog'), findsOneWidget);
     expect(find.text('맞춤 가구 둘러보기'), findsOneWidget);
@@ -17,7 +50,7 @@ void main() {
   testWidgets('InitialScreen start button opens MainPage route', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
@@ -29,7 +62,7 @@ void main() {
   testWidgets('CustomScreen validates selection and passes selected type', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('맞춤 가구 둘러보기'));
     await tester.pumpAndSettle();
@@ -54,7 +87,7 @@ void main() {
   });
 
   testWidgets('MainScreen updates style and type filters', (tester) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
@@ -74,7 +107,7 @@ void main() {
   testWidgets('MainScreen item tap opens DetailScreen with item contract', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
@@ -91,10 +124,40 @@ void main() {
     expect(find.byTooltip('즐겨찾기 저장'), findsOneWidget);
   });
 
+  testWidgets('MainScreen shows loading, empty, and error states', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp(repository: const _PendingRepository()));
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_testApp(repository: const _EmptyRepository()));
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('추천 상품이 없습니다.'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_testApp(repository: const _ErrorRepository()));
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('firebase-error'), findsOneWidget);
+  });
+
   testWidgets('MainScreen bottom navigation opens Custom and Favorites pages', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('바로 시작'));
     await tester.pumpAndSettle();
@@ -116,7 +179,7 @@ void main() {
   testWidgets('FavoritesScreen selects, deletes, and opens detail', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.byIcon(Icons.favorite));
     await tester.pumpAndSettle();
@@ -144,7 +207,7 @@ void main() {
   testWidgets('FavoritesScreen shows empty state after deleting all items', (
     tester,
   ) async {
-    await tester.pumpWidget(const MyHomeCatalogApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.byIcon(Icons.favorite));
     await tester.pumpAndSettle();
@@ -160,4 +223,90 @@ void main() {
 
     expect(find.text('즐겨찾기한 항목이 없습니다 !'), findsOneWidget);
   });
+}
+
+Widget _testApp({
+  RecommendationRepository repository = const _FakeRepository(),
+}) {
+  return MyHomeCatalogApp(recommendationRepository: repository);
+}
+
+class _FakeRepository implements RecommendationRepository {
+  const _FakeRepository();
+
+  @override
+  Future<List<ItemModel>> findItems({
+    required String style,
+    required String type,
+  }) async {
+    final styles = style == 'all'
+        ? ['natural', 'modern', 'classic', 'industrial', 'zen']
+        : [style];
+    final types = type == 'all'
+        ? ['bed', 'chair', 'dresser', 'sofa', 'table']
+        : [type];
+
+    return _items
+        .where((item) {
+          return styles.contains(item.style) && types.contains(item.type);
+        })
+        .toList(growable: false);
+  }
+
+  static const _items = [
+    ItemModel(
+      image: 'dummy://natural-chair',
+      name: 'Natural Chair',
+      price: '120,000원',
+      link: 'https://example.com/natural-chair',
+      style: 'natural',
+      type: 'chair',
+    ),
+    ItemModel(
+      image: 'dummy://modern-bed',
+      name: 'Modern Bed',
+      price: '420,000원',
+      link: 'https://example.com/modern-bed',
+      style: 'modern',
+      type: 'bed',
+    ),
+  ];
+}
+
+class _EmptyRepository implements RecommendationRepository {
+  const _EmptyRepository();
+
+  @override
+  Future<List<ItemModel>> findItems({
+    required String style,
+    required String type,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    return const [];
+  }
+}
+
+class _PendingRepository implements RecommendationRepository {
+  const _PendingRepository();
+
+  @override
+  Future<List<ItemModel>> findItems({
+    required String style,
+    required String type,
+  }) {
+    return Completer<List<ItemModel>>().future;
+  }
+}
+
+class _ErrorRepository implements RecommendationRepository {
+  const _ErrorRepository();
+
+  @override
+  Future<List<ItemModel>> findItems({
+    required String style,
+    required String type,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    throw Exception('firebase-error');
+  }
 }
