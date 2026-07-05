@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "158067936872",
+    "firebase_url": "https://house-server-34d68-default-rtdb.firebaseio.com",
+    "project_id": "house-server-34d68",
+    "storage_bucket": "house-server-34d68.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158067936872:android:2e8c41726d65c5706875dd",
+        "android_client_info": {
+          "package_name": "com.example.my_home_catalog_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSnfR7JsigHnqUr2P8YUncaA7RMFek2Yk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158067936872:android:fa27b595e08183e96875dd",
+        "android_client_info": {
+          "package_name": "org.tensorflow.lite.examples.classification"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSnfR7JsigHnqUr2P8YUncaA7RMFek2Yk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

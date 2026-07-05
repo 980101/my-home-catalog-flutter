@@ -6,28 +6,35 @@ import 'package:my_home_catalog_flutter/features/detail/presentation/detail_scre
 import 'package:my_home_catalog_flutter/features/favorites/presentation/favorites_screen.dart';
 import 'package:my_home_catalog_flutter/features/initial/domain/initial_navigation_handler.dart';
 import 'package:my_home_catalog_flutter/features/initial/presentation/initial_screen.dart';
+import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 import 'package:my_home_catalog_flutter/features/home/presentation/home_screen.dart';
 
 export 'app_routes.dart';
 
 class AppRouter {
-  const AppRouter._();
+  const AppRouter({required RecommendationRepository recommendationRepository})
+    : _recommendationRepository = recommendationRepository;
 
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+  final RecommendationRepository _recommendationRepository;
+
+  Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return MaterialPageRoute(
       settings: settings,
       builder: (context) => _buildPage(context, settings),
     );
   }
 
-  static Widget _buildPage(BuildContext context, RouteSettings settings) {
+  Widget _buildPage(BuildContext context, RouteSettings settings) {
     return switch (settings.name) {
       AppRoutes.initial => InitialScreen(
         navigationHandler: InitialNavigationHandler(
           navigator: Navigator.of(context),
         ),
       ),
-      AppRoutes.home => HomeScreen.fromRoute(settings),
+      AppRoutes.home => HomeScreen.fromRoute(
+        settings,
+        repository: _recommendationRepository,
+      ),
       AppRoutes.custom => const CustomScreen(),
       AppRoutes.camera => _RouteStubScreen(
         title: 'CameraPage',

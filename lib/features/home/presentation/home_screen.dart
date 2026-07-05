@@ -4,7 +4,9 @@ import 'package:my_home_catalog_flutter/app/theme/app_colors.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_text_styles.dart';
 import 'package:my_home_catalog_flutter/core/constants/catalog_options.dart';
+import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/home/data/dummy_recommendation_repository.dart';
+import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 import 'package:my_home_catalog_flutter/features/home/presentation/controllers/home_controller.dart';
 import 'package:my_home_catalog_flutter/features/home/presentation/widgets/furniture_type_filter.dart';
 import 'package:my_home_catalog_flutter/features/home/presentation/widgets/recommendation_item_card.dart';
@@ -16,10 +18,14 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     required this.initialStyle,
     required this.initialType,
+    required this.repository,
     super.key,
   });
 
-  factory HomeScreen.fromRoute(RouteSettings settings) {
+  factory HomeScreen.fromRoute(
+    RouteSettings settings, {
+    RecommendationRepository repository = const DummyRecommendationRepository(),
+  }) {
     final arguments = settings.arguments;
     final style = arguments is Map ? arguments['style'] : null;
     final type = arguments is Map ? arguments['type'] : null;
@@ -27,20 +33,22 @@ class HomeScreen extends StatelessWidget {
     return HomeScreen(
       initialStyle: style is String ? style : CatalogOptions.allStyle,
       initialType: type is String ? type : CatalogOptions.allType,
+      repository: repository,
     );
   }
 
   final String initialStyle;
   final String initialType;
+  final RecommendationRepository repository;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => HomeController(
-        repository: const DummyRecommendationRepository(),
+        repository: repository,
         initialStyle: initialStyle,
         initialType: initialType,
-      ),
+      )..loadItems(),
       child: const _HomeView(),
     );
   }
@@ -57,6 +65,12 @@ class _HomeView extends StatelessWidget {
     final items = context.select(
       (HomeController controller) => controller.items,
     );
+    final status = context.select(
+      (HomeController controller) => controller.status,
+    );
+    final errorMessage = context.select(
+      (HomeController controller) => controller.errorMessage,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -72,22 +86,10 @@ class _HomeView extends StatelessWidget {
             const FurnitureTypeFilter(),
             const SizedBox(height: AppSpacing.md),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                itemCount: items.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return RecommendationItemCard(
-                    item: item,
-                    onTap: () {
-                      Navigator.of(
-                        context,
-                      ).pushNamed(AppRoutes.detail, arguments: item);
-                    },
-                  );
-                },
+              child: _RecommendationList(
+                status: status,
+                items: items,
+                errorMessage: errorMessage,
               ),
             ),
           ],
@@ -95,6 +97,56 @@ class _HomeView extends StatelessWidget {
       ),
       bottomNavigationBar: const _HomeBottomNavigation(),
     );
+  }
+}
+
+class _RecommendationList extends StatelessWidget {
+  const _RecommendationList({
+    required this.status,
+    required this.items,
+    required this.errorMessage,
+  });
+
+  final HomeLoadStatus status;
+  final List<ItemModel> items;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      HomeLoadStatus.loading => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      HomeLoadStatus.empty => const Center(
+        child: Text('추천 상품이 없습니다.', style: AppTextStyles.bodyLarge),
+      ),
+      HomeLoadStatus.error => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Text(
+            errorMessage ?? '추천 목록을 불러오지 못했습니다.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.error),
+          ),
+        ),
+      ),
+      HomeLoadStatus.data => ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        itemCount: items.length,
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return RecommendationItemCard(
+            item: item,
+            onTap: () {
+              Navigator.of(
+                context,
+              ).pushNamed(AppRoutes.detail, arguments: item);
+            },
+          );
+        },
+      ),
+    };
   }
 }
 

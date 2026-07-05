@@ -1,10 +1,15 @@
 import 'package:my_home_catalog_flutter/core/constants/catalog_options.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
+import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 
-class DummyRecommendationRepository {
+class DummyRecommendationRepository implements RecommendationRepository {
   const DummyRecommendationRepository();
 
-  List<ItemModel> findItems({required String style, required String type}) {
+  @override
+  Future<List<ItemModel>> findItems({
+    required String style,
+    required String type,
+  }) async {
     final styles = style == CatalogOptions.allStyle
         ? CatalogOptions.styles
               .where((option) => option.value != CatalogOptions.allStyle)
