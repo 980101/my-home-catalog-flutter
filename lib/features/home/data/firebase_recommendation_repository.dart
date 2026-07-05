@@ -38,17 +38,20 @@ class FirebaseRecommendationRepository implements RecommendationRepository {
     String style,
     String type,
   ) {
-    final value = snapshot.value;
-    if (value is! Map<Object?, Object?>) {
-      return const [];
-    }
-
-    return value.values
-        .whereType<Map<Object?, Object?>>()
+    return _childMaps(snapshot.value)
         .map(
           (data) =>
               ItemModel.fromFirebaseMap(data: data, style: style, type: type),
         )
         .toList(growable: false);
+  }
+
+  Iterable<Map<Object?, Object?>> _childMaps(Object? value) {
+    return switch (value) {
+      Map<Object?, Object?> map =>
+        map.values.whereType<Map<Object?, Object?>>(),
+      List<Object?> list => list.whereType<Map<Object?, Object?>>(),
+      _ => const Iterable<Map<Object?, Object?>>.empty(),
+    };
   }
 }
