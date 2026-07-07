@@ -6,19 +6,28 @@ import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/detail/data/external_link_launcher.dart';
 import 'package:my_home_catalog_flutter/features/detail/presentation/controllers/detail_controller.dart';
 import 'package:my_home_catalog_flutter/features/detail/presentation/widgets/detail_info_row.dart';
+import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
 import 'package:my_home_catalog_flutter/shared/widgets/item_image_placeholder.dart';
 import 'package:provider/provider.dart';
 
 class DetailScreen extends StatelessWidget {
-  const DetailScreen({required this.item, super.key});
+  const DetailScreen({
+    required this.item,
+    required this.favoritesRepository,
+    super.key,
+  });
 
-  factory DetailScreen.fromRoute(RouteSettings settings) {
+  factory DetailScreen.fromRoute(
+    RouteSettings settings, {
+    required FavoritesRepository favoritesRepository,
+  }) {
     final arguments = settings.arguments;
     final item = arguments is ItemModel ? arguments : _fallbackItem;
-    return DetailScreen(item: item);
+    return DetailScreen(item: item, favoritesRepository: favoritesRepository);
   }
 
   final ItemModel item;
+  final FavoritesRepository favoritesRepository;
 
   static const _fallbackItem = ItemModel(
     image: 'dummy://unknown',
@@ -35,7 +44,8 @@ class DetailScreen extends StatelessWidget {
       create: (_) => DetailController(
         item: item,
         linkLauncher: const ExternalLinkLauncher(),
-      ),
+        favoritesRepository: favoritesRepository,
+      )..loadFavoriteStatus(),
       child: const _DetailView(),
     );
   }
@@ -66,7 +76,9 @@ class _DetailView extends StatelessWidget {
         title: const Text('상세 정보'),
         actions: [
           IconButton(
-            onPressed: controller.toggleFavorite,
+            onPressed: controller.isSavingFavorite
+                ? null
+                : controller.toggleFavorite,
             icon: Icon(
               controller.isFavorite ? Icons.bookmark : Icons.bookmark_border,
               color: controller.isFavorite
