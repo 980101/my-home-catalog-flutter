@@ -3,6 +3,7 @@ import 'package:my_home_catalog_flutter/app/router/app_routes.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
 import 'package:my_home_catalog_flutter/features/custom/presentation/custom_screen.dart';
 import 'package:my_home_catalog_flutter/features/detail/presentation/detail_screen.dart';
+import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
 import 'package:my_home_catalog_flutter/features/favorites/presentation/favorites_screen.dart';
 import 'package:my_home_catalog_flutter/features/initial/domain/initial_navigation_handler.dart';
 import 'package:my_home_catalog_flutter/features/initial/presentation/initial_screen.dart';
@@ -12,10 +13,14 @@ import 'package:my_home_catalog_flutter/features/home/presentation/home_screen.d
 export 'app_routes.dart';
 
 class AppRouter {
-  const AppRouter({required RecommendationRepository recommendationRepository})
-    : _recommendationRepository = recommendationRepository;
+  const AppRouter({
+    required RecommendationRepository recommendationRepository,
+    required FavoritesRepository favoritesRepository,
+  }) : _recommendationRepository = recommendationRepository,
+       _favoritesRepository = favoritesRepository;
 
   final RecommendationRepository _recommendationRepository;
+  final FavoritesRepository _favoritesRepository;
 
   Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return MaterialPageRoute(
@@ -40,8 +45,11 @@ class AppRouter {
         title: 'CameraPage',
         description: _cameraDescription(settings.arguments),
       ),
-      AppRoutes.detail => DetailScreen.fromRoute(settings),
-      AppRoutes.favorites => const FavoritesScreen(),
+      AppRoutes.detail => DetailScreen.fromRoute(
+        settings,
+        favoritesRepository: _favoritesRepository,
+      ),
+      AppRoutes.favorites => FavoritesScreen(repository: _favoritesRepository),
       _ => const _RouteStubScreen(
         title: 'Unknown route',
         description: 'TODO: Route is not defined.',

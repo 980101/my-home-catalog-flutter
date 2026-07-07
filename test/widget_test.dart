@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_home_catalog_flutter/app/app.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
+import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_query.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
@@ -56,6 +59,49 @@ void main() {
     expect(item.style, 'natural');
     expect(item.type, 'chair');
   });
+
+  test('ItemModel maps Android savedItem.json fields', () {
+    final item = ItemModel.fromSavedItemJson(const {
+      'Image': 'https://example.com/saved.png',
+      'Name': 'Saved Chair',
+      'Price': '88,000원',
+      'Link': 'https://example.com/saved',
+    });
+
+    expect(item.image, 'https://example.com/saved.png');
+    expect(item.name, 'Saved Chair');
+    expect(item.price, '88,000원');
+    expect(item.link, 'https://example.com/saved');
+    expect(item.toSavedItemJson(), {
+      'Image': 'https://example.com/saved.png',
+      'Name': 'Saved Chair',
+      'Price': '88,000원',
+      'Link': 'https://example.com/saved',
+    });
+  });
+
+  test(
+    'FavoritesRepository saves, rejects duplicate Name, and deletes',
+    () async {
+      final repository = _favoritesRepositoryWithItems(const []);
+      const item = ItemModel(
+        image: 'https://example.com/chair.png',
+        name: 'Repository Chair',
+        price: '55,000원',
+        link: 'https://example.com/chair',
+        style: 'natural',
+        type: 'chair',
+      );
+
+      expect(await repository.saveItem(item), FavoriteSaveResult.saved);
+      expect(await repository.saveItem(item), FavoriteSaveResult.duplicate);
+      expect(await repository.loadItems(), hasLength(1));
+
+      await repository.deleteAt(0);
+
+      expect(await repository.loadItems(), isEmpty);
+    },
+  );
 
   testWidgets('ItemNetworkImage shows placeholder for invalid image url', (
     tester,
@@ -208,34 +254,40 @@ void main() {
     Navigator.of(tester.element(find.text('가구 선택'))).pop();
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('즐겨찾기'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('즐겨찾기'), findsOneWidget);
-    expect(find.text('Favorite Chair'), findsOneWidget);
+    expect(find.text('즐겨찾기한 항목이 없습니다 !'), findsOneWidget);
   });
 
   testWidgets('FavoritesScreen selects, deletes, and opens detail', (
     tester,
   ) async {
-    await tester.pumpWidget(_testApp());
+    await tester.pumpWidget(
+      _testApp(favoritesRepository: _favoritesRepositoryWithDefaultItems()),
+    );
 
     await tester.tap(find.byIcon(Icons.favorite));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Favorite Chair'), findsOneWidget);
     expect(find.text('Favorite Table'), findsOneWidget);
     expect(find.text('선택'), findsNWidgets(2));
 
     await tester.tap(find.text('선택').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.byTooltip('삭제'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Favorite Chair'), findsNothing);
     expect(find.text('Favorite Table'), findsOneWidget);
 
     await tester.tap(find.text('Favorite Table'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('상세 정보'), findsOneWidget);
     expect(find.text('Favorite Table'), findsOneWidget);
@@ -245,28 +297,131 @@ void main() {
   testWidgets('FavoritesScreen shows empty state after deleting all items', (
     tester,
   ) async {
-    await tester.pumpWidget(_testApp());
+    await tester.pumpWidget(
+      _testApp(favoritesRepository: _favoritesRepositoryWithDefaultItems()),
+    );
 
     await tester.tap(find.byIcon(Icons.favorite));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     await tester.tap(find.text('선택').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.byTooltip('삭제'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('선택').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
     await tester.tap(find.byTooltip('삭제'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('즐겨찾기한 항목이 없습니다 !'), findsOneWidget);
+  });
+
+  testWidgets('DetailScreen saves favorite and prevents duplicate Name', (
+    tester,
+  ) async {
+    final favoritesRepository = _InMemoryFavoritesRepository(const []);
+    await tester.pumpWidget(_testApp(favoritesRepository: favoritesRepository));
+
+    await tester.tap(find.text('바로 시작'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Natural Chair'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await tester.tap(find.byTooltip('즐겨찾기 저장'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(await favoritesRepository.loadItems(), hasLength(1));
+
+    await tester.tap(find.byTooltip('즐겨찾기 저장'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('이미 존재하는 아이템입니다.'), findsOneWidget);
   });
 }
 
 Widget _testApp({
   RecommendationRepository repository = const _FakeRepository(),
+  FavoritesRepository? favoritesRepository,
 }) {
-  return MyHomeCatalogApp(recommendationRepository: repository);
+  return MyHomeCatalogApp(
+    recommendationRepository: repository,
+    favoritesRepository:
+        favoritesRepository ?? _InMemoryFavoritesRepository(const []),
+  );
+}
+
+FavoritesRepository _favoritesRepositoryWithDefaultItems() {
+  return _InMemoryFavoritesRepository(const [
+    ItemModel(
+      image: 'dummy://favorite-chair',
+      name: 'Favorite Chair',
+      price: '130,000원',
+      link: 'https://example.com/favorite-chair',
+      style: 'natural',
+      type: 'chair',
+    ),
+    ItemModel(
+      image: 'dummy://favorite-table',
+      name: 'Favorite Table',
+      price: '210,000원',
+      link: 'https://example.com/favorite-table',
+      style: 'zen',
+      type: 'table',
+    ),
+  ]);
+}
+
+class _InMemoryFavoritesRepository extends FavoritesRepository {
+  _InMemoryFavoritesRepository(List<ItemModel> items) : _items = [...items];
+
+  final List<ItemModel> _items;
+
+  @override
+  Future<List<ItemModel>> loadItems() async {
+    return List.unmodifiable(_items);
+  }
+
+  @override
+  Future<bool> isSaved(ItemModel item) async {
+    return _items.any((savedItem) => savedItem.name == item.name);
+  }
+
+  @override
+  Future<FavoriteSaveResult> saveItem(ItemModel item) async {
+    if (await isSaved(item)) {
+      return FavoriteSaveResult.duplicate;
+    }
+
+    _items.add(item);
+    return FavoriteSaveResult.saved;
+  }
+
+  @override
+  Future<void> deleteAt(int index) async {
+    if (index < 0 || index >= _items.length) {
+      return;
+    }
+
+    _items.removeAt(index);
+  }
+}
+
+FavoritesRepository _favoritesRepositoryWithItems(List<ItemModel> items) {
+  final directory = Directory.systemTemp.createTempSync(
+    'my_home_catalog_favorites_test_',
+  );
+  final file = File('${directory.path}/${FavoritesRepository.fileName}');
+  file.writeAsStringSync(
+    jsonEncode(items.map((item) => item.toSavedItemJson()).toList()),
+  );
+  return FavoritesRepository(storageDirectory: directory);
 }
 
 class _FakeRepository implements RecommendationRepository {

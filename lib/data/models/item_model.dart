@@ -29,4 +29,19 @@ class ItemModel {
       type: type,
     );
   }
+
+  factory ItemModel.fromSavedItemJson(Map<String, dynamic> data) {
+    return ItemModel(
+      image: data['Image']?.toString() ?? '',
+      name: data['Name']?.toString() ?? '',
+      price: data['Price']?.toString() ?? '',
+      link: data['Link']?.toString() ?? '',
+      style: 'all',
+      type: 'all',
+    );
+  }
+
+  Map<String, String> toSavedItemJson() {
+    return {'Image': image, 'Name': name, 'Price': price, 'Link': link};
+  }
 }

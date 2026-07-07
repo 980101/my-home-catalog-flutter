@@ -449,3 +449,16 @@
 - `DetailScreen` 즐겨찾기 버튼을 실제 저장소와 연결한다.
 - `FavoritesScreen`을 더미 repository에서 실제 로컬 JSON repository로 교체한다.
 - Camera/TFLite 구현 전 `CameraPage`에서 `MainPage`로 전달할 `style`, `type` 계약을 유지한다.
+
+---
+
+## 2026-07-07 - 즐겨찾기 로컬 저장 구현
+
+- `savedItem.json` 기반 즐겨찾기 로컬 저장소를 구현했다.
+- Android 기존 계약에 맞춰 저장 key는 `Image`, `Name`, `Price`, `Link`를 유지했다.
+- 상세 화면 저장 버튼이 실제 파일 저장을 수행하도록 연결했다.
+- `Name` 기준 중복 저장을 방지하고, 중복 시 `"이미 존재하는 아이템입니다."` 메시지를 표시하도록 했다.
+- 즐겨찾기 화면이 더미 데이터 대신 `savedItem.json`을 읽도록 변경했다.
+- 선택 항목 삭제 시 파일을 갱신하고 화면 목록도 다시 반영하도록 했다.
+- 파일 없음 및 빈 목록 상태를 처리했다.
+- `flutter analyze`, `flutter test`로 검증했다.
