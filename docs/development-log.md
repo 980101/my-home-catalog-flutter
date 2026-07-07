@@ -452,13 +452,179 @@
 
 ---
 
-## 2026-07-07 - 즐겨찾기 로컬 저장 구현
+## 2026-07-07 작업 내용 - 즐겨찾기 로컬 저장 구현
 
-- `savedItem.json` 기반 즐겨찾기 로컬 저장소를 구현했다.
+### 작업 내용
+
+- 기존 Android 프로젝트와 Flutter 문서를 기준으로 즐겨찾기 로컬 저장 기능을 구현했다.
+- `savedItem.json` 기반 로컬 저장소를 추가했다.
 - Android 기존 계약에 맞춰 저장 key는 `Image`, `Name`, `Price`, `Link`를 유지했다.
+- `ItemModel`에 Firebase 소문자 key와 로컬 JSON 대문자 key 매핑을 분리했다.
 - 상세 화면 저장 버튼이 실제 파일 저장을 수행하도록 연결했다.
 - `Name` 기준 중복 저장을 방지하고, 중복 시 `"이미 존재하는 아이템입니다."` 메시지를 표시하도록 했다.
 - 즐겨찾기 화면이 더미 데이터 대신 `savedItem.json`을 읽도록 변경했다.
-- 선택 항목 삭제 시 파일을 갱신하고 화면 목록도 다시 반영하도록 했다.
-- 파일 없음 및 빈 목록 상태를 처리했다.
-- `flutter analyze`, `flutter test`로 검증했다.
+- 선택 항목 삭제 시 `savedItem.json`을 갱신하고 화면 목록도 다시 반영하도록 했다.
+- 파일 없음, 빈 파일, 빈 목록 상태를 처리했다.
+- 즐겨찾기 목록 이미지 표시를 실제 `image` 값 기반 네트워크 이미지 위젯으로 변경했다.
+- Camera, TFLite, Firebase 구조, 로그인/회원가입, 앱 내부 WebView는 변경하지 않았다.
+
+### 변경 파일
+
+- `pubspec.yaml`
+  - `path_provider` 의존성 추가
+- `pubspec.lock`
+  - `path_provider` 및 플랫폼 패키지 잠금 정보 갱신
+- `lib/app/app.dart`
+  - 즐겨찾기 repository 주입 구조 추가
+- `lib/app/router/app_router.dart`
+  - Detail/Favorites 라우트에 실제 즐겨찾기 repository 전달
+- `lib/data/models/item_model.dart`
+  - `Image`, `Name`, `Price`, `Link` 로컬 JSON 매핑 추가
+- `lib/features/favorites/data/favorites_repository.dart`
+  - `savedItem.json` 조회, 저장, 중복 확인, 삭제 repository 추가
+- `lib/features/favorites/data/dummy_favorites_repository.dart`
+  - 더미 즐겨찾기 repository 제거
+- `lib/features/detail/presentation/controllers/detail_controller.dart`
+  - 실제 즐겨찾기 저장, 중복 처리, 저장 여부 조회 연결
+- `lib/features/detail/presentation/detail_screen.dart`
+  - 즐겨찾기 repository 주입 및 저장 상태 UI 연결
+- `lib/features/favorites/presentation/controllers/favorites_controller.dart`
+  - 파일 기반 즐겨찾기 로딩, 삭제, 오류 상태 처리
+- `lib/features/favorites/presentation/favorites_screen.dart`
+  - 로딩, 오류, 빈 목록, 파일 기반 목록 표시 연결
+- `lib/features/favorites/presentation/widgets/favorite_item_card.dart`
+  - 실제 이미지 URL 기반 표시로 변경
+- `test/widget_test.dart`
+  - 로컬 JSON 매핑, 저장, 중복, 삭제, 빈 상태, 상세 저장 테스트 추가
+- `macos/Flutter/GeneratedPluginRegistrant.swift`
+- `linux/flutter/generated_plugins.cmake`
+- `windows/flutter/generated_plugins.cmake`
+  - `path_provider` 플러그인 등록을 위해 Flutter tool이 갱신
+
+### AI 활용 방식
+
+- AI가 `docs/architecture.md`, `docs/feature-spec.md`, `docs/coding-rules.md`, `docs/ui-guideline.md`, `docs/harness-checklist.md`를 확인했다.
+- AI가 Android 원본의 `savedItem.json` 파일명과 `Image`, `Name`, `Price`, `Link` 저장 계약을 Flutter 모델 매핑에 반영했다.
+- AI가 화면 Widget 내부에 파일 IO를 넣지 않고 repository와 controller로 분리했다.
+- AI가 기존 더미 repository 의존 테스트를 실제 저장소 단위 테스트와 인메모리 화면 테스트로 분리했다.
+
+### 발생한 문제
+
+- 기존 `DetailController`는 실제 저장 없이 임시 메시지만 표시했다.
+- 기존 `FavoritesScreen`은 더미 repository를 읽고 화면 목록만 삭제해 실제 파일이 갱신되지 않았다.
+- 위젯 테스트에서 실제 `dart:io` 파일 Future를 직접 사용하면 테스트 fake async 환경에서 로딩 상태가 불안정했다.
+
+### 해결 방법
+
+- `FavoritesRepository`를 추가해 파일 조회, 저장, 중복 확인, 삭제 책임을 분리했다.
+- `DetailController`가 저장 여부를 비동기로 확인하고 저장 결과에 따라 메시지와 아이콘 상태를 갱신하도록 변경했다.
+- `FavoritesController`가 삭제 후 repository에서 목록을 다시 읽어 화면 상태를 갱신하도록 변경했다.
+- 파일 저장소 자체는 단위 테스트로 검증하고, 화면 테스트는 인메모리 repository로 검증했다.
+
+### 검증 결과
+
+- `flutter pub get` 통과
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+
+### 다음 작업 계획
+
+- Android/iOS 실제 기기에서 앱 재시작 후 `savedItem.json` 유지 여부를 확인한다.
+- 저장 성공 시 사용자 피드백 문구를 추가할지 결정한다.
+- 실제 Firebase 이미지 URL이 즐겨찾기 화면에서도 정상 표시되는지 수동 검증한다.
+
+---
+
+## 2026-07-07 작업 내용 - Camera 및 TFLite 기능 마이그레이션
+
+### 작업 내용
+
+- 기존 Android `CameraActivity` / `ClassifierActivity` 기능 계약을 Flutter `CameraScreen`으로 마이그레이션했다.
+- 기존 Android 프로젝트의 `model.tflite`, `labels.txt`를 Flutter asset으로 복사하고 등록했다.
+- `CameraScreen` placeholder를 실제 카메라 화면으로 교체했다.
+- Android `CAMERA` 권한과 iOS `NSCameraUsageDescription`을 추가했다.
+- `permission_handler`를 사용해 카메라 런타임 권한 요청 흐름을 구현했다.
+- `camera` 패키지 기반 카메라 프리뷰를 구현했다.
+- `tflite_flutter` 기반 TFLite 모델 로딩 및 추론 구조를 구현했다.
+- 카메라 프레임을 RGB 변환, 회전 보정, 정사각 crop, resize 후 모델 입력으로 전달하도록 했다.
+- confidence `0.9` 이상인 최상위 라벨만 `recognitionStyle`로 저장하도록 했다.
+- `recognitionStyle`이 있을 때 `촬영하기` 클릭 시 `MainScreen`으로 `style`, `type`을 전달하도록 했다.
+- `recognitionStyle`이 없으면 `촬영하기` 클릭 시 화면 이동하지 않도록 했다.
+- 최근 인식 스타일 히스토리 저장, 조회, 삭제, 히스토리 클릭 이동을 구현했다.
+- Firebase 구조, 로그인/회원가입, 검색, 장바구니, 앱 내부 WebView는 변경하지 않았다.
+
+### 변경 파일
+
+- `assets/model.tflite`
+  - 원본 Android 모델 asset 복사
+- `assets/labels.txt`
+  - 원본 Android 라벨 asset 복사
+- `pubspec.yaml`
+  - `camera`, `tflite_flutter`, `image`, `shared_preferences`, `permission_handler` 의존성 추가
+  - `model.tflite`, `labels.txt` asset 등록
+- `pubspec.lock`
+  - 카메라, TFLite, 이미지 처리, SharedPreferences, 권한 패키지 잠금 정보 갱신
+- `android/app/src/main/AndroidManifest.xml`
+  - Android 카메라 권한과 camera feature 선언
+- `ios/Runner/Info.plist`
+  - iOS 카메라 권한 설명 추가
+- `lib/app/app.dart`
+  - 테스트에서 CameraScreen 대체 주입이 가능하도록 `cameraBuilder` 추가
+- `lib/app/router/app_router.dart`
+  - Camera 라우트를 실제 `CameraScreen`으로 연결
+- `lib/features/camera/data/style_history_repository.dart`
+  - 최근 인식 스타일 히스토리 저장, 조회, 삭제 repository 추가
+- `lib/features/camera/data/tflite_style_classifier.dart`
+  - TFLite 모델 로딩, 라벨 로딩, 프레임 전처리, 추론, confidence threshold 처리 추가
+- `lib/features/camera/presentation/controllers/camera_screen_controller.dart`
+  - 권한 요청, 카메라 초기화, 프레임 스트림, recognitionStyle, 히스토리, 화면 이동 상태 관리 추가
+- `lib/features/camera/presentation/camera_screen.dart`
+  - 카메라 프리뷰, 히스토리 가로 목록, 삭제 버튼, `촬영하기` 버튼 UI 구현
+- `test/widget_test.dart`
+  - 히스토리 repository 테스트 추가
+  - Camera 라우팅 테스트를 fake CameraScreen 주입 방식으로 변경
+- `macos/Flutter/GeneratedPluginRegistrant.swift`
+- `linux/flutter/generated_plugins.cmake`
+- `windows/flutter/generated_plugin_registrant.cc`
+- `windows/flutter/generated_plugins.cmake`
+  - 신규 Flutter 플러그인 등록을 위해 Flutter tool이 갱신
+
+### AI 활용 방식
+
+- AI가 `docs/architecture.md`, `docs/feature-spec.md`, `docs/coding-rules.md`, `docs/ui-guideline.md`, `docs/harness-checklist.md`의 Camera/TFLite 계약을 확인했다.
+- AI가 원본 Android 프로젝트의 `app/src/main/assets/model.tflite`, `labels.txt`를 찾아 Flutter asset으로 복사했다.
+- AI가 Camera, TFLite, 히스토리 책임을 각각 screen, controller, classifier, repository로 분리했다.
+- AI가 테스트 환경에서 실제 카메라 플러그인을 실행하지 않도록 라우터에 `cameraBuilder` 주입 지점을 추가했다.
+- AI가 Android 에뮬레이터 연결 상태를 확인하고, 연결된 Android 디바이스가 없어 APK 빌드 검증으로 대체했다.
+
+### 발생한 문제
+
+- Flutter 프로젝트에는 `model.tflite`, `labels.txt`가 없어서 원본 Android 프로젝트에서 asset을 찾아 복사해야 했다.
+- `flutter pub add` 이후 직접 추가한 의존성이 중복되어 `pubspec.yaml` duplicate mapping 오류가 발생했다.
+- 일반 샌드박스에서 Flutter SDK cache 접근 제한으로 `flutter build apk --debug`가 실패했다.
+- 현재 `flutter devices`에서 Android 에뮬레이터가 감지되지 않아 권한 요청과 카메라 프리뷰 수동 검증을 완료할 수 없었다.
+
+### 해결 방법
+
+- `/Users/hj/project_personal/my-home-catalog/app/src/main/assets/`의 `model.tflite`, `labels.txt`를 `assets/`로 복사했다.
+- `pubspec.yaml`의 중복 의존성을 제거하고 asset 등록을 정리했다.
+- 카메라 프레임은 RGB 변환, 센서 방향 기반 회전 보정, 정사각 crop, resize 순서로 전처리했다.
+- 이미 프레임을 처리 중이면 새 프레임을 건너뛰고, 추론 간격을 제한해 UI 부담을 줄였다.
+- Flutter SDK cache 권한 문제는 승인된 escalated command로 `flutter build apk --debug`를 재실행해 검증했다.
+
+### 검증 결과
+
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+- `flutter build apk --debug` 통과
+- `flutter devices` 실행 결과 Android 에뮬레이터 미연결 확인
+
+### 다음 작업 계획
+
+- Android 에뮬레이터 또는 실기기에서 CameraScreen 진입, 권한 요청, 프리뷰 표시를 수동 검증한다.
+- 실제 카메라 프레임에서 TFLite confidence와 라벨 갱신이 Android 원본과 유사한지 확인한다.
+- 히스토리 클릭 시 `MainScreen`으로 전달되는 `style`, `type`이 실제 추천 목록 조회에 반영되는지 수동 검증한다.
+- iOS 실기기에서 카메라 권한과 프리뷰 표시를 검증한다.
+- 필요 시 TFLite 추론을 isolate로 분리해 성능을 최적화한다.

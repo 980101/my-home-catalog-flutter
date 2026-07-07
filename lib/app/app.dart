@@ -8,17 +8,20 @@ class MyHomeCatalogApp extends StatelessWidget {
   const MyHomeCatalogApp({
     required this.recommendationRepository,
     this.favoritesRepository = const FavoritesRepository(),
+    this.cameraBuilder,
     super.key,
   });
 
   final RecommendationRepository recommendationRepository;
   final FavoritesRepository favoritesRepository;
+  final Widget Function(RouteSettings settings)? cameraBuilder;
 
   @override
   Widget build(BuildContext context) {
     final router = AppRouter(
       recommendationRepository: recommendationRepository,
       favoritesRepository: favoritesRepository,
+      cameraBuilder: cameraBuilder,
     );
 
     return MaterialApp(

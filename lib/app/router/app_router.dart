@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_home_catalog_flutter/app/router/app_routes.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
+import 'package:my_home_catalog_flutter/features/camera/data/style_history_repository.dart';
+import 'package:my_home_catalog_flutter/features/camera/data/tflite_style_classifier.dart';
+import 'package:my_home_catalog_flutter/features/camera/presentation/camera_screen.dart';
 import 'package:my_home_catalog_flutter/features/custom/presentation/custom_screen.dart';
 import 'package:my_home_catalog_flutter/features/detail/presentation/detail_screen.dart';
 import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
@@ -16,11 +19,14 @@ class AppRouter {
   const AppRouter({
     required RecommendationRepository recommendationRepository,
     required FavoritesRepository favoritesRepository,
+    Widget Function(RouteSettings settings)? cameraBuilder,
   }) : _recommendationRepository = recommendationRepository,
-       _favoritesRepository = favoritesRepository;
+       _favoritesRepository = favoritesRepository,
+       _cameraBuilder = cameraBuilder;
 
   final RecommendationRepository _recommendationRepository;
   final FavoritesRepository _favoritesRepository;
+  final Widget Function(RouteSettings settings)? _cameraBuilder;
 
   Route<dynamic> onGenerateRoute(RouteSettings settings) {
     return MaterialPageRoute(
@@ -41,10 +47,13 @@ class AppRouter {
         repository: _recommendationRepository,
       ),
       AppRoutes.custom => const CustomScreen(),
-      AppRoutes.camera => _RouteStubScreen(
-        title: 'CameraPage',
-        description: _cameraDescription(settings.arguments),
-      ),
+      AppRoutes.camera =>
+        _cameraBuilder?.call(settings) ??
+            CameraScreen.fromRoute(
+              settings,
+              historyRepository: const StyleHistoryRepository(),
+              classifier: TfliteStyleClassifier(),
+            ),
       AppRoutes.detail => DetailScreen.fromRoute(
         settings,
         favoritesRepository: _favoritesRepository,
@@ -55,11 +64,6 @@ class AppRouter {
         description: 'TODO: Route is not defined.',
       ),
     };
-  }
-
-  static String _cameraDescription(Object? arguments) {
-    final type = arguments is Map ? arguments['type'] : null;
-    return 'TODO: CameraActivity migration pending. type=${type ?? 'none'}';
   }
 }
 
