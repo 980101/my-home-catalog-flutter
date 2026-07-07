@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_home_catalog_flutter/app/app.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
+import 'package:my_home_catalog_flutter/features/camera/data/style_history_repository.dart';
 import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_query.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
 import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('RecommendationQueryResolver expands all style and type values', () {
@@ -103,6 +105,20 @@ void main() {
     },
   );
 
+  test(
+    'StyleHistoryRepository saves, moves duplicate to front, and deletes',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      const repository = StyleHistoryRepository();
+
+      expect(await repository.loadStyles(), isEmpty);
+      expect(await repository.saveStyle('modern'), ['modern']);
+      expect(await repository.saveStyle('zen'), ['zen', 'modern']);
+      expect(await repository.saveStyle('modern'), ['modern', 'zen']);
+      expect(await repository.deleteStyle('zen'), ['modern']);
+    },
+  );
+
   testWidgets('ItemNetworkImage shows placeholder for invalid image url', (
     tester,
   ) async {
@@ -164,10 +180,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CameraPage'), findsOneWidget);
-    expect(
-      find.text('TODO: CameraActivity migration pending. type=chair'),
-      findsOneWidget,
-    );
+    expect(find.text('type=chair'), findsOneWidget);
   });
 
   testWidgets('MainScreen updates style and type filters', (tester) async {
@@ -354,7 +367,28 @@ Widget _testApp({
     recommendationRepository: repository,
     favoritesRepository:
         favoritesRepository ?? _InMemoryFavoritesRepository(const []),
+    cameraBuilder: _FakeCameraScreen.fromRoute,
   );
+}
+
+class _FakeCameraScreen extends StatelessWidget {
+  const _FakeCameraScreen({required this.type});
+
+  factory _FakeCameraScreen.fromRoute(RouteSettings settings) {
+    final arguments = settings.arguments;
+    final type = arguments is Map ? arguments['type'] : null;
+    return _FakeCameraScreen(type: type is String ? type : 'all');
+  }
+
+  final String type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('CameraPage')),
+      body: Center(child: Text('type=$type')),
+    );
+  }
 }
 
 FavoritesRepository _favoritesRepositoryWithDefaultItems() {
