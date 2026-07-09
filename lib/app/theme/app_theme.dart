@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_colors.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
+import 'package:my_home_catalog_flutter/app/theme/app_text_styles.dart';
 
 class AppTheme {
   const AppTheme._();
@@ -29,14 +30,14 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.medium),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: AppTextStyles.labelLarge,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(0, 48),
           foregroundColor: AppColors.textSecondary,
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: AppTextStyles.labelLarge,
         ),
       ),
       useMaterial3: true,

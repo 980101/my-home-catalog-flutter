@@ -61,7 +61,7 @@ class AppRouter {
       AppRoutes.favorites => FavoritesScreen(repository: _favoritesRepository),
       _ => const _RouteStubScreen(
         title: 'Unknown route',
-        description: 'TODO: Route is not defined.',
+        description: '정의되지 않은 화면입니다.',
       ),
     };
   }
