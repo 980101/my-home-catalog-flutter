@@ -628,3 +628,35 @@
 - 히스토리 클릭 시 `MainScreen`으로 전달되는 `style`, `type`이 실제 추천 목록 조회에 반영되는지 수동 검증한다.
 - iOS 실기기에서 카메라 권한과 프리뷰 표시를 검증한다.
 - 필요 시 TFLite 추론을 isolate로 분리해 성능을 최적화한다.
+
+---
+
+## 2026-07-09 - 최종 리팩토링 점검
+
+- `docs/architecture.md`, `docs/feature-spec.md`, `docs/coding-rules.md`, `docs/ui-guideline.md`, `docs/harness-checklist.md` 기준으로 Flutter 코드 구조와 구현 상태를 점검했다.
+- 추천 목록 카드와 즐겨찾기 카드의 중복 UI를 `ItemSummaryCard` 공통 위젯으로 분리했다.
+- `RecommendationItemCard`와 `FavoriteItemCard`는 각 화면의 의미와 추가 동작만 유지하도록 정리했다.
+- 버튼 테마의 하드코딩된 텍스트 스타일을 `AppTextStyles.labelLarge` 토큰으로 통일했다.
+- 원격 `main`의 Camera/TFLite 구현을 반영한 뒤 라우터의 `TODO` placeholder 제거 상태를 유지했다.
+- 관련 위젯 테스트는 fake `CameraScreen` 주입 방식의 `type` 전달 검증을 유지했다.
+- 기능 추가 없이 기존 화면 이동 흐름과 데이터 계약을 유지했다.
+
+### 변경 파일
+
+- `lib/shared/widgets/item_summary_card.dart`
+- `lib/features/home/presentation/widgets/recommendation_item_card.dart`
+- `lib/features/favorites/presentation/widgets/favorite_item_card.dart`
+- `lib/app/router/app_router.dart`
+- `lib/app/theme/app_theme.dart`
+- `docs/development-log.md`
+
+### 검증 결과
+
+- `dart format` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+- `rg -n "TODO|FIXME" lib test` 결과 없음
+
+### 비고
+
+- 작업 전부터 존재하던 iOS 프로젝트 파일 변경은 이번 리팩토링 범위에서 수정하지 않았다.
