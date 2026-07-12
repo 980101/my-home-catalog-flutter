@@ -136,6 +136,21 @@ void main() {
     expect(find.byIcon(Icons.image_not_supported_outlined), findsOneWidget);
   });
 
+  testWidgets('ItemNetworkImage only accepts https image urls', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ItemNetworkImage(
+          imageUrl: 'http://example.com/item.png',
+          placeholderLabel: 'sofa',
+          size: 88,
+        ),
+      ),
+    );
+
+    expect(find.text('sofa'), findsOneWidget);
+    expect(find.byIcon(Icons.image_not_supported_outlined), findsOneWidget);
+  });
+
   testWidgets('InitialScreen shows Android initial entry actions', (
     tester,
   ) async {
@@ -219,6 +234,15 @@ void main() {
     expect(find.text('120,000원'), findsOneWidget);
     expect(find.text('구매하기'), findsOneWidget);
     expect(find.byTooltip('즐겨찾기 저장'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is ItemNetworkImage &&
+            widget.imageUrl == 'dummy://natural-chair' &&
+            widget.size == 220,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('MainScreen shows loading, empty, and error states', (

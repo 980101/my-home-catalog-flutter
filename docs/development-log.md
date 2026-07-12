@@ -660,3 +660,107 @@
 ### 비고
 
 - 작업 전부터 존재하던 iOS 프로젝트 파일 변경은 이번 리팩토링 범위에서 수정하지 않았다.
+
+---
+
+## 2026-07-11 - 공개 이미지 API 기반 상품 이미지 URL 매핑
+
+### 작업 내용
+
+- Firebase Storage 요금제 제한으로 접근이 어려운 기존 상품 이미지 URL을 공개 HTTPS 이미지 URL로 교체할 수 있도록 준비했다.
+- `tools/house-server-rtdb-original.json` 원본 구조를 분석하고, 원본 파일은 수정하지 않았다.
+- `.env`에서 `PEXELS_API_KEY` 설정을 확인하고 Pexels 공식 API를 우선 사용했다.
+- 상품 경로와 가구 타입 기반 영어 검색어를 생성해 상품별 이미지 URL 매핑을 만들었다.
+- Firebase Realtime Database에 다시 가져올 수 있는 변환 JSON을 생성했다.
+- Flutter 공통 이미지 위젯이 HTTPS 네트워크 이미지만 로드하고 실패 시 placeholder를 표시하도록 보완했다.
+
+### 변경 파일
+
+- `.env.example`
+- `tools/fetch_public_image_urls.py`
+- `tools/image_url_mapping.json`
+- `tools/update_rtdb_image_urls.py`
+- `tools/house-server-rtdb-public-images.json`
+- `lib/shared/widgets/item_network_image.dart`
+- `test/widget_test.dart`
+- `docs/development-log.md`
+
+### AI 활용 방식
+
+- AI가 RTDB export의 실제 경로 구조인 `all/{style}/{type}/{Item}`을 확인했다.
+- AI가 스타일과 가구 타입을 조합해 Pexels 검색어를 생성하는 스크립트를 작성했다.
+- AI가 공식 Pexels API 응답에서 이미지 URL, 작가, 원본 페이지, 이미지 ID를 추출해 매핑 파일을 생성했다.
+- AI가 변환 결과에서 `image` 외 필드가 바뀌지 않았는지 자동 검증하는 스크립트를 작성했다.
+
+### 발생한 문제
+
+- 일반 샌드박스에서는 Pexels API 도메인 DNS 조회가 제한되어 첫 API 호출이 실패했다.
+- 저장소에는 `.env.example` 파일이 없어 예시 환경변수 파일을 새로 만들어야 했다.
+
+### 해결 방법
+
+- 사용자 승인 후 동일 fetch 스크립트를 네트워크 권한으로 재실행해 Pexels API 매핑을 완료했다.
+- `.env.example`에는 실제 키가 아닌 예시 값만 추가했다.
+- 별도 Python 패키지가 필요 없도록 표준 라이브러리 `urllib` 기반으로 API 호출을 구현했다.
+
+### 검증 결과
+
+- `python3 tools/fetch_public_image_urls.py` 통과: 42개 상품 전체 매핑 성공
+- `python3 tools/update_rtdb_image_urls.py` 통과: 42개 상품 변환, 누락 0개
+- 모든 `newImage`가 HTTPS URL인지 확인
+- 이미지 ID 중복 없음 확인
+- 원본과 결과 JSON에서 `image` 외 필드 동일 확인
+- `dart format lib test` 통과
+- `flutter analyze` 통과
+- `flutter test` 통과
+
+### 미검증 항목
+
+- Firebase Console 실제 import는 수행하지 않았다.
+- 원격 이미지가 모든 사용자 환경에서 장기적으로 계속 접근 가능한지는 API 제공자 정책에 따라 별도 확인이 필요하다.
+
+### 다음 작업 계획
+
+- Firebase Console에서 `tools/house-server-rtdb-public-images.json`을 가져온다.
+- 앱에서 실제 RTDB 데이터를 불러와 MainScreen, DetailScreen, FavoritesScreen 이미지 표시를 수동 확인한다.
+- 필요 시 Pexels 이미지 품질을 상품별로 검수하고 특정 상품의 검색어를 조정한다.
+
+---
+
+## 2026-07-12 - Pexels 상품 이미지 앱 적용 및 Android 실행 오류 수정
+
+### 작업 내용
+
+- Android 앱에서 외부 HTTPS 이미지를 불러올 수 있도록 `INTERNET` 권한을 추가했다.
+- 상세 화면의 이미지 placeholder를 공통 `ItemNetworkImage` 위젯으로 교체해 목록과 상세 화면에서 동일한 방식으로 상품 이미지를 표시하도록 수정했다.
+- 공통 이미지 위젯은 HTTPS URL만 허용하고, URL이 잘못됐거나 이미지 로딩에 실패하면 기존 placeholder를 표시하도록 보완했다.
+- Pexels API로 생성한 42개 상품 이미지 매핑 파일을 Flutter asset에 포함했다.
+- Firebase Realtime Database가 아직 기존 Firebase Storage URL을 반환하더라도 상품 경로 `all/{style}/{type}/{itemKey}`를 기준으로 Pexels URL을 자동 적용하는 `PublicImageUrlResolver`를 추가했다.
+- Firebase 응답의 실제 상품 키를 보존해 데이터 순서가 바뀌어도 올바른 상품 이미지가 연결되도록 처리했다.
+- 매핑 asset을 읽지 못하거나 대응하는 상품이 없으면 Firebase가 반환한 기존 URL을 사용하는 fallback을 적용했다.
+
+### 원인
+
+- Pexels 이미지 URL을 포함한 변환 JSON은 생성됐지만 Firebase Console에 실제로 import되지 않아, 앱은 계속 접근이 제한된 기존 Firebase Storage URL을 받고 있었다.
+- Android 메인 매니페스트에는 외부 네트워크 이미지 로딩에 필요한 인터넷 권한이 선언돼 있지 않았다.
+
+### 변경 파일
+
+- `android/app/src/main/AndroidManifest.xml`
+- `lib/features/detail/presentation/detail_screen.dart`
+- `lib/features/home/data/firebase_recommendation_repository.dart`
+- `lib/features/home/data/public_image_url_resolver.dart`
+- `lib/shared/widgets/item_network_image.dart`
+- `pubspec.yaml`
+- `tools/image_url_mapping.json`
+- `test/widget_test.dart`
+- `docs/development-log.md`
+
+### 검증 결과
+
+- 실제 Firebase RTDB 응답이 기존 Firebase Storage URL을 반환하는 상태임을 확인했다.
+- Android 에뮬레이터에서 debug APK 빌드, 설치 및 앱 실행을 확인했다.
+- 앱 재실행 후 목록과 상세 화면에서 Pexels 상품 이미지가 표시되는 것을 확인했다.
+- `flutter analyze` 통과
+- `flutter test` 통과: 전체 18개 테스트 성공
+- `git diff --check` 통과
