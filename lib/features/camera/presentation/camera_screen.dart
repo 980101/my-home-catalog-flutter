@@ -125,14 +125,51 @@ class _CameraPreviewPanel extends StatelessWidget {
 
     return ColoredBox(
       color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: cameraController.value.aspectRatio,
-          child: CameraPreview(cameraController),
+      child: ClipRect(
+        child: SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            child: Builder(
+              builder: (context) {
+                final displaySize = cameraPreviewDisplaySize(
+                  previewSize: cameraController.value.previewSize,
+                  aspectRatio: cameraController.value.aspectRatio,
+                  orientation: MediaQuery.orientationOf(context),
+                );
+
+                return SizedBox.fromSize(
+                  size: displaySize,
+                  child: AspectRatio(
+                    aspectRatio: displaySize.aspectRatio,
+                    child: CameraPreview(cameraController),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+Size cameraPreviewDisplaySize({
+  required Size? previewSize,
+  required double aspectRatio,
+  required Orientation orientation,
+}) {
+  final validPreviewSize =
+      previewSize != null && previewSize.width > 0 && previewSize.height > 0
+      ? previewSize
+      : Size(aspectRatio, 1);
+  final landscapeSize = validPreviewSize.width >= validPreviewSize.height
+      ? validPreviewSize
+      : Size(validPreviewSize.height, validPreviewSize.width);
+
+  return orientation == Orientation.portrait
+      ? Size(landscapeSize.height, landscapeSize.width)
+      : landscapeSize;
 }
 
 class _CameraBottomPanel extends StatelessWidget {
