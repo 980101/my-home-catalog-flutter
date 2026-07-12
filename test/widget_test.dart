@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_home_catalog_flutter/app/app.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/camera/data/style_history_repository.dart';
+import 'package:my_home_catalog_flutter/features/camera/presentation/camera_screen.dart';
 import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_query.dart';
 import 'package:my_home_catalog_flutter/features/home/data/recommendation_repository.dart';
@@ -14,6 +15,28 @@ import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('Camera preview swaps landscape sensor size in portrait mode', () {
+    final displaySize = cameraPreviewDisplaySize(
+      previewSize: const Size(1280, 720),
+      aspectRatio: 16 / 9,
+      orientation: Orientation.portrait,
+    );
+
+    expect(displaySize, const Size(720, 1280));
+    expect(displaySize.aspectRatio, closeTo(9 / 16, 0.0001));
+  });
+
+  test('Camera preview keeps sensor ratio in landscape mode', () {
+    final displaySize = cameraPreviewDisplaySize(
+      previewSize: const Size(1280, 720),
+      aspectRatio: 16 / 9,
+      orientation: Orientation.landscape,
+    );
+
+    expect(displaySize, const Size(1280, 720));
+    expect(displaySize.aspectRatio, closeTo(16 / 9, 0.0001));
+  });
+
   test('RecommendationQueryResolver expands all style and type values', () {
     const resolver = RecommendationQueryResolver();
 
