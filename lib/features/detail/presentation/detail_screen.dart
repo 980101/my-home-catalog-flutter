@@ -7,7 +7,7 @@ import 'package:my_home_catalog_flutter/features/detail/data/external_link_launc
 import 'package:my_home_catalog_flutter/features/detail/presentation/controllers/detail_controller.dart';
 import 'package:my_home_catalog_flutter/features/detail/presentation/widgets/detail_info_row.dart';
 import 'package:my_home_catalog_flutter/features/favorites/data/favorites_repository.dart';
-import 'package:my_home_catalog_flutter/shared/widgets/item_image_placeholder.dart';
+import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 import 'package:provider/provider.dart';
 
 class DetailScreen extends StatelessWidget {
@@ -93,7 +93,13 @@ class _DetailView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            Center(child: ItemImagePlaceholder(label: item.image, size: 220)),
+            Center(
+              child: ItemNetworkImage(
+                imageUrl: item.image,
+                placeholderLabel: item.type,
+                size: 220,
+              ),
+            ),
             const SizedBox(height: AppSpacing.xl),
             DetailInfoRow(label: '제품명', value: item.name),
             const SizedBox(height: AppSpacing.lg),

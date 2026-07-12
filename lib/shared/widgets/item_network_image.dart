@@ -18,8 +18,7 @@ class ItemNetworkImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uri = Uri.tryParse(imageUrl);
-    final canLoadNetworkImage =
-        uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+    final canLoadNetworkImage = uri != null && uri.scheme == 'https';
 
     if (!canLoadNetworkImage) {
       return ItemImagePlaceholder(label: placeholderLabel, size: size);
