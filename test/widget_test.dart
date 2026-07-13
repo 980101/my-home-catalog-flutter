@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_home_catalog_flutter/app/app.dart';
+import 'package:my_home_catalog_flutter/core/constants/catalog_options.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/features/camera/data/style_history_repository.dart';
 import 'package:my_home_catalog_flutter/features/camera/presentation/camera_screen.dart';
@@ -15,6 +16,24 @@ import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test(
+    'Catalog display labels use Korean without changing internal values',
+    () {
+      expect(CatalogOptions.styleLabel('natural'), '내추럴');
+      expect(CatalogOptions.styleLabel('modern'), '모던');
+      expect(CatalogOptions.styleLabel('classic'), '클래식');
+      expect(CatalogOptions.styleLabel('industrial'), '인더스트리얼');
+      expect(CatalogOptions.styleLabel('zen'), '젠');
+      expect(CatalogOptions.styleLabel('all'), '전체');
+      expect(CatalogOptions.furnitureTypeLabel('chair'), '의자');
+      expect(CatalogOptions.furnitureTypeLabel('bed'), '침대');
+      expect(CatalogOptions.furnitureTypeLabel('sofa'), '소파');
+      expect(CatalogOptions.furnitureTypeLabel('dresser'), '서랍장');
+      expect(CatalogOptions.furnitureTypeLabel('table'), '테이블');
+      expect(CatalogOptions.furnitureTypeLabel('all'), '전체');
+    },
+  );
+
   test('Camera preview swaps landscape sensor size in portrait mode', () {
     final displaySize = cameraPreviewDisplaySize(
       previewSize: const Size(1280, 720),
@@ -210,14 +229,14 @@ void main() {
 
     expect(find.text('가구를 선택해주세요!'), findsOneWidget);
 
-    await tester.tap(find.text('chair'));
+    await tester.tap(find.text('의자'));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
     await tester.tap(find.text('다음'));
     await tester.pumpAndSettle();
 
-    expect(find.text('CameraPage'), findsOneWidget);
+    expect(find.text('스타일 인식'), findsOneWidget);
     expect(find.text('type=chair'), findsOneWidget);
   });
 
@@ -233,7 +252,7 @@ void main() {
     expect(find.text('모던').first, findsOneWidget);
     expect(find.text('Modern Bed'), findsOneWidget);
 
-    await tester.tap(find.text('Chair'));
+    await tester.tap(find.text('의자'));
     await tester.pumpAndSettle();
 
     expect(find.text('Modern Bed'), findsNothing);
@@ -256,6 +275,7 @@ void main() {
     expect(find.text('가격'), findsOneWidget);
     expect(find.text('120,000원'), findsOneWidget);
     expect(find.text('구매하기'), findsOneWidget);
+    expect(find.text('https://example.com/natural-chair'), findsNothing);
     expect(find.byTooltip('즐겨찾기 저장'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
@@ -432,7 +452,7 @@ class _FakeCameraScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('CameraPage')),
+      appBar: AppBar(title: const Text('스타일 인식'), centerTitle: true),
       body: Center(child: Text('type=$type')),
     );
   }

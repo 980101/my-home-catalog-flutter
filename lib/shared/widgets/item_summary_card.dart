@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_colors.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_spacing.dart';
 import 'package:my_home_catalog_flutter/app/theme/app_text_styles.dart';
+import 'package:my_home_catalog_flutter/core/constants/catalog_options.dart';
 import 'package:my_home_catalog_flutter/data/models/item_model.dart';
 import 'package:my_home_catalog_flutter/shared/widgets/item_network_image.dart';
 
@@ -39,7 +40,7 @@ class ItemSummaryCard extends StatelessWidget {
           children: [
             ItemNetworkImage(
               imageUrl: item.image,
-              placeholderLabel: item.type,
+              placeholderLabel: CatalogOptions.furnitureTypeLabel(item.type),
               size: imageSize,
             ),
             const SizedBox(width: AppSpacing.md),

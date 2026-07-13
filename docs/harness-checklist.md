@@ -71,7 +71,7 @@
 - [ ] Intent 또는 route parameter에 `style`이 없으면 `all`을 사용한다.
 - [ ] Intent 또는 route parameter에 `type`이 없으면 `all`을 사용한다.
 - [ ] 기본 제목은 `모든 스타일`이다.
-- [ ] 스타일 필터가 `모두`, `내추럴`, `모던`, `클래식`, `젠`, `인더스트리얼`만 표시한다.
+- [ ] 스타일 필터가 `전체`, `내추럴`, `모던`, `클래식`, `젠`, `인더스트리얼`만 표시한다.
 - [ ] 스타일 값은 각각 `all`, `natural`, `modern`, `classic`, `zen`, `industrial`로 매핑된다.
 - [ ] 가구 타입 필터가 `All`, `Chair`, `Bed`, `Sofa`, `Dresser`, `Table`만 표시한다.
 - [ ] 가구 타입 값은 각각 `all`, `chair`, `bed`, `sofa`, `dresser`, `table`로 매핑된다.
