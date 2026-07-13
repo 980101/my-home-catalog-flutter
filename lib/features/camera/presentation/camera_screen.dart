@@ -70,7 +70,7 @@ class _CameraView extends StatelessWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('CameraPage')),
+      appBar: AppBar(title: const Text('스타일 인식'), centerTitle: true),
       body: SafeArea(
         child: Column(
           children: [
@@ -191,7 +191,9 @@ class _CameraBottomPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            controller.recognitionStyle ?? '인식된 스타일 없음',
+            controller.recognitionStyle == null
+                ? '인식된 스타일 없음'
+                : CatalogOptions.styleLabel(controller.recognitionStyle!),
             style: AppTextStyles.titleMedium,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -261,7 +263,7 @@ class _HistoryList extends StatelessWidget {
                       },
                     );
                   },
-                  child: Text(style),
+                  child: Text(CatalogOptions.styleLabel(style)),
                 ),
                 IconButton(
                   onPressed: () {

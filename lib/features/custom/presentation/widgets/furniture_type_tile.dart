@@ -38,7 +38,7 @@ class FurnitureTypeTile extends StatelessWidget {
             Icon(option.icon, color: foreground, size: 48),
             const SizedBox(height: AppSpacing.md),
             Text(
-              option.value,
+              option.label,
               style: AppTextStyles.titleMedium.copyWith(color: foreground),
             ),
           ],

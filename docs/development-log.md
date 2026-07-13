@@ -764,3 +764,60 @@
 - `flutter analyze` 통과
 - `flutter test` 통과: 전체 18개 테스트 성공
 - `git diff --check` 통과
+
+---
+
+## 2026-07-13 - UI 필터 가시성, 한글 명칭 및 CameraScreen AppBar 개선
+
+### 작업 내용
+
+- MainScreen의 스타일 및 가구 종류 필터에 자동 스크롤을 적용했다.
+  - 각 필터에 `ScrollController`를 연결했다.
+  - Chip별 `GlobalKey`로 선택 항목의 위치를 추적했다.
+  - 선택값 변경 후 `Scrollable.ensureVisible`을 호출해 선택된 Chip이 화면 안으로 자연스럽게 이동하도록 했다.
+  - 초기 라우트에서 전달된 스타일과 가구 종류에도 동일하게 적용했다.
+- DetailScreen에서 구매하기 버튼 아래에 그대로 표시되던 URL 텍스트를 제거했다.
+  - 구매하기 버튼과 외부 브라우저 실행 기능은 유지했다.
+- 사용자에게 표시되는 스타일명과 가구 종류명을 한글로 통일했다.
+  - 스타일: 전체, 내추럴, 모던, 클래식, 인더스트리얼, 젠
+  - 가구 종류: 전체, 의자, 침대, 소파, 서랍장, 테이블
+  - 내부의 Firebase key, 모델 값, 필터 값인 `all`, `natural`, `chair` 등은 변경하지 않았다.
+  - 맞춤 가구 선택 화면, 카메라 인식 결과와 히스토리, 상품 이미지 placeholder에 공통 한글 표시 매핑을 적용했다.
+- `all`의 사용자 표시 문구를 `모두`에서 `전체`로 변경하고 관련 UI 명세와 테스트 기대값을 동일하게 맞췄다.
+- CameraScreen 상단 AppBar 제목을 `CameraPage`에서 `스타일 인식`으로 변경했다.
+- `centerTitle: true`를 적용해 제목을 가운데 정렬했다.
+- AppBar 기본 높이와 여백을 유지해 기존 화면 구성과 자연스럽게 연결되도록 했다.
+- Navigator가 제공하는 기본 뒤로가기 버튼과 동작은 변경하지 않았다.
+- 다른 실제 화면에서 `Page`, `Screen`, `Activity` 형태의 개발용 화면명이 사용자 텍스트로 노출되는지 점검했으며 추가 노출은 발견되지 않았다.
+- 카메라 초기화, TFLite 추론, 스타일 히스토리 기능은 변경하지 않았다.
+- Firebase 데이터 구조와 기존 추천 필터 조회 로직은 변경하지 않았다.
+
+### 수정 이유
+
+- 가로 필터의 뒤쪽 항목을 선택했을 때 선택된 Chip 일부가 화면 밖에 남아 현재 선택 상태를 확인하기 어려웠다.
+- 상세 화면에서 내부 구매 URL이 그대로 노출돼 화면 완성도와 가독성이 떨어졌다.
+- 동일한 스타일과 가구 종류가 화면에 따라 영문 또는 한글로 다르게 표시되고 있었다.
+- 카메라 화면 상단의 `CameraPage`는 개발용 화면명으로 사용자 화면에 적합하지 않았다.
+
+### 변경 파일
+
+- `lib/core/constants/catalog_options.dart`
+- `lib/features/home/presentation/widgets/style_filter_bar.dart`
+- `lib/features/home/presentation/widgets/furniture_type_filter.dart`
+- `lib/features/detail/presentation/detail_screen.dart`
+- `lib/shared/widgets/item_summary_card.dart`
+- `lib/features/custom/presentation/widgets/furniture_type_tile.dart`
+- `lib/features/camera/presentation/camera_screen.dart`
+- `test/widget_test.dart`
+- `docs/ui-guideline.md`
+- `docs/feature-spec.md`
+- `docs/harness-checklist.md`
+- `docs/development-log.md`
+
+### 검증 결과
+
+- `dart format` 적용
+- `flutter analyze` 통과
+- `flutter test` 통과: 전체 21개 테스트 성공
+- 한글 표시 매핑과 DetailScreen URL 비노출 테스트를 추가했다.
+- 사용자 화면 코드에서 `CameraPage`와 `Text(item.link)` 직접 노출이 제거된 것을 확인했다.
